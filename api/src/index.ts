@@ -19,16 +19,17 @@ const { name, version } = require('../../package.json');
 export const app = express();
 
 // connect mongodb
-mongoose
-  .connect(
-    'mongodb+srv://guyunxiang32:guyunxiang32@cluster0.wuji6xf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-  )
-  .then(() => {
-    logger.info('MongoDB connected');
-  })
-  .catch((err?: any) => {
-    logger.error('MongoDB connection error:', err);
-  });
+const { DB_URL } = process.env;
+if (DB_URL) {
+  mongoose
+    .connect(DB_URL)
+    .then(() => {
+      logger.info('MongoDB connected');
+    })
+    .catch((err?: any) => {
+      logger.error('MongoDB connection error:', err);
+    });
+}
 
 app.set('trust proxy', true);
 app.use(cookieParser());
