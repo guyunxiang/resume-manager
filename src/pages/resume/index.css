@@ -9,7 +9,7 @@
   margin: 0;
 }
 
-.resume-page h1>span {
+.resume-page h1 > span {
   display: block;
   border: 1px solid transparent;
   line-height: 1.5;
@@ -17,8 +17,10 @@
   color: var(--primary-color);
 }
 
-.resume-page h1>input,
-.resume-page h1>input:focus {
+.resume-page h1 > input,
+.resume-page h1 > input:focus {
+  padding-top: 0;
+  padding-bottom: 0;
   font-weight: 500;
   font-size: 32px;
   color: var(--primary-color);
@@ -33,7 +35,7 @@
   flex: 1;
 }
 
-.resume-page .profile>div:first-child>h2 {
+.resume-page .profile > div:first-child > h2 {
   margin-top: 0;
 }
 
@@ -41,7 +43,7 @@
   margin-bottom: 0;
 }
 
-.resume-page .profile p>.input-group {
+.resume-page .profile p > .input-group {
   margin-bottom: 1em;
 }
 
@@ -110,7 +112,6 @@
   border-color: var(--bs-border-color);
   cursor: pointer;
 }
-
 
 /* `md` applies to small devices (landscape phones, less than 768px) */
 @media (max-width: 767.98px) {
