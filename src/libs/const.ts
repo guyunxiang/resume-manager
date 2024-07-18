@@ -1,5 +1,5 @@
-export const DEFAULT_RESUME = {
-  name: '顾云翔',
+export const RESUME_TEMPLATE = {
+  name: '顾云翔（本地模版）',
   basicInfo: ['guyunxiang32@gmail.com', '+1 2345678900', '浙江，杭州'],
   profiles: [
     {
@@ -90,5 +90,3 @@ export const MINIMUM_RESUME_TEMPLATE = {
     },
   ],
 };
-
-export default { DEFAULT_RESUME };

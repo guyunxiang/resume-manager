@@ -5,9 +5,10 @@ import { toast } from 'react-toastify';
 import blockletLogo from '../assets/blocklet.svg';
 import plusIcon from '../assets/plus-lg.svg';
 
-import './home.css';
-
+import { RESUME_TEMPLATE } from '../libs/const';
 import api from '../libs/api';
+
+import './home.css';
 
 // Define the structure of API responses
 interface ApiResponse<T> {
@@ -28,7 +29,7 @@ type ProfileList = ProfileItem[];
 
 function Home() {
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const [profileList, setProfileList] = useState<ProfileList>([]);
+  const [profileList, setProfileList] = useState<ProfileList | null>(null);
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -65,6 +66,26 @@ function Home() {
     }
   }, [walletAddress]);
 
+  // render template profile
+  const renderTemplateProfile = () => {
+    if (profileList === null) return null;
+    if (profileList.length) return null;
+    return (
+      <li>
+        <Link to="/profile/new?template=true">
+          <h3 className="mb-3">{RESUME_TEMPLATE.name}</h3>
+          <div className="d-flex flex-column gap-2">
+            {RESUME_TEMPLATE.basicInfo.slice(0, 3).map((item) => (
+              <p key={item} className="m-0">
+                {item}
+              </p>
+            ))}
+          </div>
+        </Link>
+      </li>
+    );
+  };
+
   return (
     <div className="home-page container px-3">
       <div className="d-flex align-items-center justify-content-between gap-3">
@@ -76,7 +97,12 @@ function Home() {
       <hr className="mb-3 mb-md-5" />
       <div className="card">
         <ul className="resume-list">
-          {profileList.map(({ _id, name, basicInfo }) => (
+          <li className="create_new">
+            <Link to="/profile/new">
+              <img src={plusIcon} alt="add" className="add" />
+            </Link>
+          </li>
+          {profileList?.map(({ _id, name, basicInfo }) => (
             <li key={_id}>
               <Link to={`/profile/${_id}`}>
                 <h3 className="mb-3">{name}</h3>
@@ -90,11 +116,7 @@ function Home() {
               </Link>
             </li>
           ))}
-          <li className="create_new">
-            <Link to="/profile/new">
-              <img src={plusIcon} alt="add" className="add" />
-            </Link>
-          </li>
+          {renderTemplateProfile()}
         </ul>
       </div>
     </div>

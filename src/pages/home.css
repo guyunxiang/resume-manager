@@ -39,10 +39,15 @@
   font-size: 32px;
 }
 
-.resume-list>li {
+.resume-list > li {
   padding: 1em;
   min-height: 172px;
   border: 1px dashed var(--secondary-color);
+}
+
+.resume-list > li > a {
+  display: block;
+  height: 100%;
 }
 
 .resume-list .create_new {
@@ -61,7 +66,7 @@
 }
 
 .resume-list .create_new a:hover {
-  opacity: .5;
+  opacity: 0.5;
 }
 
 .resume-list .create_new a img {
