@@ -8,8 +8,9 @@ interface EditComponentProps {
   type?: string;
   children: ReactNode;
   name: string;
-  append?: boolean;
-  appendText?: string;
+  appendBtnText?: string;
+  deleteBtnText?: string;
+  onDelete?: () => void;
   onAppend?: () => void;
 }
 
@@ -18,9 +19,10 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
   type = 'input',
   children,
   name,
-  append = true,
-  appendText = '+',
-  onAppend = () => {},
+  appendBtnText = '+',
+  deleteBtnText = '-',
+  onAppend,
+  onDelete,
 }: EditComponentProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -49,18 +51,6 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
     );
   }
 
-  if (!append) {
-    return (
-      <Form.Control
-        ref={inputRef as React.RefObject<HTMLInputElement>}
-        className="form-control edit-input"
-        type="text"
-        defaultValue={childText}
-        name={name}
-      />
-    );
-  }
-
   return (
     <InputGroup>
       <Form.Control
@@ -70,9 +60,16 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
         defaultValue={childText}
         name={name}
       />
-      <Button variant="outline-secondary" onClick={onAppend}>
-        {appendText}
-      </Button>
+      {onAppend ? (
+        <Button variant="outline-secondary" onClick={onAppend}>
+          {appendBtnText}
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button variant="outline-danger" onClick={onDelete}>
+          {deleteBtnText}
+        </Button>
+      ) : null}
     </InputGroup>
   );
 });

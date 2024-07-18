@@ -1,16 +1,15 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import { Button, ButtonGroup, Dropdown, DropdownButton, Modal, Spinner } from 'react-bootstrap';
 import { debounce } from 'lodash';
-import classNames from 'classnames';
 
 import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
 
-import api from '../../libs/api';
 import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
+import api from '../../libs/api';
 
 import './index.css';
 
@@ -55,7 +54,7 @@ function ResumePage(): React.ReactElement {
   const [originalUserInfo, setOriginalUserInfo] = useState<UserInfo | null>(null);
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -182,6 +181,7 @@ function ResumePage(): React.ReactElement {
     }
     setUserInfo(updatedUserInfo);
     setEditStatus(false);
+    handleSubmit();
   };
 
   const handleAppend = (path: string) => {
@@ -221,7 +221,7 @@ function ResumePage(): React.ReactElement {
           switch (lastKey) {
             case 'basicInfo':
             case 'descriptions':
-              (current[lastKey] as string[]).push('Add description content');
+              (current[lastKey] as string[]).push('');
               break;
             case 'list':
               (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
@@ -238,6 +238,94 @@ function ResumePage(): React.ReactElement {
     });
   };
 
+  // hanlde delete item
+  const handleDeleteItem = (path: string) => {
+    setUserInfo((prevUserInfo) => {
+      if (!prevUserInfo) return null;
+
+      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+      const keys = path.split('.');
+      let current: any = newUserInfo;
+      let parent: any = null;
+      let lastArrayName: string | null = null;
+
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (key && key.includes('[')) {
+          const [arrayName, indexStr] = key.split('[');
+          if (arrayName && indexStr) {
+            const index = parseInt(indexStr.replace(']', ''), 10);
+            if (!Number.isNaN(index)) {
+              parent = current;
+              lastArrayName = arrayName;
+              current = current[arrayName][index];
+            } else {
+              return prevUserInfo;
+            }
+          }
+        } else if (key) {
+          parent = current;
+          lastArrayName = key;
+          current = current[key];
+        } else {
+          return prevUserInfo;
+        }
+      }
+
+      const lastKey = keys[keys.length - 1];
+      if (lastKey && lastKey.includes('[')) {
+        const [arrayName, indexStr] = lastKey.split('[');
+        if (arrayName && indexStr) {
+          const index = parseInt(indexStr.replace(']', ''), 10);
+          if (!Number.isNaN(index) && Array.isArray(current[arrayName])) {
+            if (arrayName === 'basicInfo' && current[arrayName].length <= 1) {
+              toast.warn('Cannot delete the last item in basicInfo.');
+            } else {
+              current[arrayName].splice(index, 1);
+            }
+          }
+        }
+      } else if (lastKey && Array.isArray(current)) {
+        const index = parseInt(lastKey, 10);
+        if (!Number.isNaN(index)) {
+          if (lastArrayName === 'basicInfo' && current.length <= 1) {
+            toast.warn('Cannot delete the last item in basicInfo.');
+          } else {
+            current.splice(index, 1);
+          }
+        }
+      } else if (parent && lastArrayName) {
+        // For non-array fields like 'summary'
+        if (Array.isArray(parent[lastArrayName])) {
+          if (lastArrayName === 'basicInfo' && parent[lastArrayName].length <= 1) {
+            toast.warn('Cannot delete the last item in basicInfo.');
+          } else {
+            parent[lastArrayName] = parent[lastArrayName].filter((item: any) => item !== current);
+          }
+        } else {
+          // For single items, we can set it to undefined or null
+          parent[lastArrayName] = undefined;
+        }
+      }
+
+      // Remove empty arrays or objects in profiles
+      if (lastArrayName === 'profiles') {
+        newUserInfo.profiles = newUserInfo.profiles.filter((profile: any) => {
+          if (
+            profile.summary ||
+            (profile.descriptions && profile.descriptions.length) ||
+            (profile.list && profile.list.length)
+          ) {
+            return true;
+          }
+          return false;
+        });
+      }
+      return newUserInfo;
+    });
+  };
+
+  // handle delete profile
   const handleDelete = async () => {
     try {
       const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${id}`);
@@ -254,41 +342,101 @@ function ResumePage(): React.ReactElement {
     setShowDeleteModal(false);
   };
 
-  const renderButtonBar = () => {
-    // edit mode
+  const handleAppendProfile = () => {
+    setUserInfo((prevUserInfo) => {
+      if (!prevUserInfo) return null;
+
+      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+
+      switch (selectedTemplate) {
+        case 0:
+          newUserInfo.profiles.push({
+            title: 'Summary',
+            summary: 'Add your summary here',
+          });
+          break;
+        case 1:
+          newUserInfo.profiles.push({
+            title: 'Work Experience',
+            list: [
+              {
+                title: 'Job Title',
+                descriptions: ['Add your job description here'],
+              },
+            ],
+          });
+          break;
+        case 2:
+          newUserInfo.profiles.push({
+            title: 'Education',
+            descriptions: ['Add your education details here'],
+          });
+          break;
+        case 3:
+          newUserInfo.profiles.push({
+            title: 'Common Items',
+            descriptions: ['Add common items here'],
+          });
+          break;
+        default:
+          break;
+      }
+
+      return newUserInfo;
+    });
+  };
+
+  const renderActionBar = () => {
     if (editStatus) {
       return (
-        <>
-          <Button variant="light" className="small" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button variant="primary" className="btn btn-primary px-5" onClick={handleSave}>
-            Save
-          </Button>
-        </>
+        <Button variant="primary" className="btn btn-primary px-5" onClick={debounce(handleSave, 500)}>
+          Submit
+        </Button>
       );
     }
     return (
-      <>
-        <Link to="/" className="text-underline">
-          {'<'} Back
-        </Link>
-        <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
+      <Button
+        variant="primary"
+        className="px-5"
+        disabled={editStatus}
+        onClick={() => {
+          setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
+          setEditStatus(true);
+        }}>
+        Edit
+      </Button>
+    );
+  };
+
+  const renderAppendBtnGroup = () => {
+    if (!editStatus) return null;
+    const templates = ['Summary', 'Work Experience', 'Education', 'Common Items'];
+    return (
+      <div className="d-flex flex-column gap-3">
+        <ButtonGroup className="w-100">
+          <Button className="px-3" onClick={handleAppendProfile}>
+            Append
+          </Button>
+          <DropdownButton
+            className="w-100"
+            as={ButtonGroup}
+            title={templates[selectedTemplate]}
+            onSelect={(eventKey) => setSelectedTemplate(parseInt(eventKey || '0', 10))}>
+            {templates.map((template, index) => (
+              <Dropdown.Item key={index} eventKey={index}>
+                {template}
+              </Dropdown.Item>
+            ))}
+          </DropdownButton>
+        </ButtonGroup>
+        <hr />
+        <Button variant="secondary" className="w-100" onClick={handleCancel}>
+          Cancel
+        </Button>
+        <Button className="w-100" variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
           Delete
         </Button>
-        <Button
-          variant="light"
-          className={classNames('small px-4', { 'btn btn-primary': editStatus })}
-          onClick={() => {
-            setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
-            setEditStatus(true);
-          }}>
-          Edit
-        </Button>
-        <Button variant="primary" className="px-5" onClick={debounce(handleSubmit, 500)}>
-          Submit
-        </Button>
-      </>
+      </div>
     );
   };
 
@@ -306,39 +454,52 @@ function ResumePage(): React.ReactElement {
   return (
     <div className="resume-page container px-3">
       <form ref={formRef}>
-        <div className="d-flex align-items-center justify-content-between gap-3">
+        <div className="d-flex flex-column flex-md-row  align-items-center justify-content-between gap-3">
           <div className="header">
             <h1>
-              <EditComponent status={editStatus} name="name" append={false}>
+              <EditComponent status={editStatus} name="name">
                 {userInfo.name}
               </EditComponent>
             </h1>
           </div>
-          <div className="d-flex justify-content-between align-items-center gap-3">{renderButtonBar()}</div>
+          <div className="d-flex justify-content-between align-items-center gap-3">
+            <Button
+              variant="outline-primary"
+              onClick={() => {
+                navigate('/');
+              }}>
+              {'<'} Back
+            </Button>
+            {renderActionBar()}
+          </div>
         </div>
         <hr className="mb-3 mb-md-5" />
         <div className="d-flex flex-column flex-md-row gap-4 ">
           <div className="basicInfo">
             {userInfo.basicInfo.map((text, index) => (
-              <p className="mb-3" key={`${text}-${index}`}>
+              <p className="mb-0" key={`${text}-${index}`}>
                 <EditComponent
                   status={editStatus}
                   name={`basicInfo[${index}]`}
-                  onAppend={() => handleAppend('basicInfo')}>
+                  onAppend={() => handleAppend('basicInfo')}
+                  onDelete={() => handleDeleteItem(`basicInfo[${index}]`)}>
                   {text}
                 </EditComponent>
               </p>
             ))}
             <hr />
+            {renderAppendBtnGroup()}
           </div>
           <div className="profile flex-1">
             {userInfo.profiles.map((profile, index) => (
               <ProfileItem
                 key={index}
+                index={index}
                 profile={profile}
                 profileIndex={index}
                 editStatus={editStatus}
                 onAppend={handleAppend}
+                onDelete={handleDeleteItem}
               />
             ))}
           </div>

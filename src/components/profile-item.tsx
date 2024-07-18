@@ -16,32 +16,42 @@ interface Profile {
 }
 
 interface ProfileItemProps {
+  index: number;
   profile: Profile;
   profileIndex: number;
   editStatus: boolean;
   onAppend: (path: string) => void;
+  onDelete: (path: string) => void;
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem({
+  index,
   profile,
   profileIndex,
   editStatus,
   onAppend,
+  onDelete,
 }: ProfileItemProps) {
   return (
-    <div>
+    <div key={index}>
       <h2 className="title">
         <EditComponent
-          key={`profile-title-${profileIndex}`}
           status={editStatus}
+          key={`${profile.title}-${profileIndex}`}
           name={`profiles[${profileIndex}].title`}
-          append={false}>
+          onDelete={() => onDelete(`profiles[${profileIndex}].title`)}>
           {profile.title}
         </EditComponent>
       </h2>
       {profile.summary && (
         <p>
-          <EditComponent status={editStatus} type="textarea" name={`profiles[${profileIndex}].summary`}>
+          <EditComponent
+            status={editStatus}
+            type="textarea"
+            key={`${profile.summary}-${profileIndex}`}
+            name={`profiles[${profileIndex}].summary`}
+            onAppend={() => onAppend(`profiles[${profileIndex}].summary`)}
+            onDelete={() => onDelete(`profiles[${profileIndex}].summary`)}>
             {profile.summary}
           </EditComponent>
         </p>
@@ -52,7 +62,8 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
             <EditComponent
               status={editStatus}
               name={`profiles[${profileIndex}].descriptions[${descIndex}]`}
-              onAppend={() => onAppend(`profiles[${profileIndex}].descriptions`)}>
+              onAppend={() => onAppend(`profiles[${profileIndex}].descriptions`)}
+              onDelete={() => onDelete(`profiles[${profileIndex}].descriptions[${descIndex}]`)}>
               {description}
             </EditComponent>
           </p>
@@ -64,7 +75,8 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
               <EditComponent
                 status={editStatus}
                 name={`profiles[${profileIndex}].list[${itemIndex}].title`}
-                onAppend={() => onAppend(`profiles[${profileIndex}].list`)}>
+                onAppend={() => onAppend(`profiles[${profileIndex}].list`)}
+                onDelete={() => onDelete(`profiles[${profileIndex}].list[${itemIndex}]`)}>
                 {item.title}
               </EditComponent>
             </h3>
@@ -73,7 +85,8 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
                 <EditComponent
                   status={editStatus}
                   name={`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`}
-                  onAppend={() => onAppend(`profiles[${profileIndex}].list[${itemIndex}].descriptions`)}>
+                  onAppend={() => onAppend(`profiles[${profileIndex}].list[${itemIndex}].descriptions`)}
+                  onDelete={() => onDelete(`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`)}>
                   {description}
                 </EditComponent>
               </p>
