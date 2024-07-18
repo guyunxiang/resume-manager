@@ -40,11 +40,11 @@ function ResumePage(): React.ReactElement {
   const navigate = useNavigate();
 
   const { pathname } = useLocation();
-  // validate if on create profile page
+  // Validate if on create profile page
   const isNewPage = pathname === '/profile/new';
-  // get profile id from url
+  // Get profile id from url
   const { id } = useParams();
-  // get isTemplate, if true, display template profile
+  // Get isTemplate, if true, display template profile
   const [searchParams] = useSearchParams();
   const isTemplate = searchParams.get('template') === 'true';
 
@@ -184,6 +184,7 @@ function ResumePage(): React.ReactElement {
     handleSubmit();
   };
 
+  // Handle append a new item into profile
   const handleAppend = (path: string) => {
     setUserInfo((prevUserInfo) => {
       if (!prevUserInfo) return null;
@@ -238,7 +239,7 @@ function ResumePage(): React.ReactElement {
     });
   };
 
-  // hanlde delete item
+  // Hanlde delete an item
   const handleDeleteItem = (path: string) => {
     setUserInfo((prevUserInfo) => {
       if (!prevUserInfo) return null;
@@ -325,7 +326,7 @@ function ResumePage(): React.ReactElement {
     });
   };
 
-  // handle delete profile
+  // Handle delete profile
   const handleDelete = async () => {
     try {
       const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${id}`);
@@ -342,6 +343,7 @@ function ResumePage(): React.ReactElement {
     setShowDeleteModal(false);
   };
 
+  // Handle append a section into profile likes summary, work experience, education
   const handleAppendProfile = () => {
     setUserInfo((prevUserInfo) => {
       if (!prevUserInfo) return null;
@@ -386,6 +388,7 @@ function ResumePage(): React.ReactElement {
     });
   };
 
+  // Render Action bar
   const renderActionBar = () => {
     if (editStatus) {
       return (
@@ -408,6 +411,7 @@ function ResumePage(): React.ReactElement {
     );
   };
 
+  // Render the append button group
   const renderAppendBtnGroup = () => {
     if (!editStatus) return null;
     const templates = ['Summary', 'Work Experience', 'Education', 'Common Items'];
@@ -440,7 +444,7 @@ function ResumePage(): React.ReactElement {
     );
   };
 
-  // loading
+  // Render loading spinner while data is being fetched
   if (!userInfo) {
     return (
       <div className="loading-content">
