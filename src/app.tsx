@@ -12,6 +12,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/profile" element={<Resume />} />
+      <Route path="/profile/:id" element={<Resume />} />
       <Route path="/profile/new" element={<Resume />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
