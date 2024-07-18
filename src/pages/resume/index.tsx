@@ -14,7 +14,7 @@ import api from '../../libs/api';
 import './index.css';
 
 // Define the structure of user information
-interface UserInfo {
+interface ProfileData {
   _id?: string;
   name: string;
   basicInfo: string[];
@@ -50,11 +50,26 @@ function ResumePage(): React.ReactElement {
 
   const formRef = useRef<HTMLFormElement>(null);
   const [editStatus, setEditStatus] = useState<boolean>(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [originalUserInfo, setOriginalUserInfo] = useState<UserInfo | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [originalUserInfo, setOriginalUserInfo] = useState<ProfileData | null>(null);
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Preview mode
+  useEffect(() => {
+    const handleEsc = (event: any) => {
+      if (event.key === 'Escape' || event.keyCode === 27) {
+        setPreviewMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, []);
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -78,20 +93,20 @@ function ResumePage(): React.ReactElement {
   useEffect(() => {
     const fetchProfileByIdAndWallet = async (wallet: string) => {
       try {
-        const res = await api.get<ApiResponse<UserInfo>>(`/api/profile/query?wallet=${wallet}&id=${id}`);
+        const res = await api.get<ApiResponse<ProfileData>>(`/api/profile/query?wallet=${wallet}&id=${id}`);
         const { success, data } = res.data;
         if (!success || !data) {
           toast.error('Failed to obtain the current profile!');
-          setUserInfo(MINIMUM_RESUME_TEMPLATE);
+          setProfileData(MINIMUM_RESUME_TEMPLATE);
           return;
         }
-        setUserInfo(data);
+        setProfileData(data);
       } catch (error) {
         toast.error('An error occurred while fetching profile data');
       }
     };
     if (isNewPage) {
-      setUserInfo(isTemplate ? RESUME_TEMPLATE : MINIMUM_RESUME_TEMPLATE);
+      setProfileData(isTemplate ? RESUME_TEMPLATE : MINIMUM_RESUME_TEMPLATE);
       return;
     }
     if (walletAddress && id) {
@@ -102,15 +117,15 @@ function ResumePage(): React.ReactElement {
   // Handle cancellation of edit mode
   const handleCancel = () => {
     if (originalUserInfo) {
-      setUserInfo(JSON.parse(JSON.stringify(originalUserInfo)));
+      setProfileData(JSON.parse(JSON.stringify(originalUserInfo)));
     }
     setEditStatus(false);
     setOriginalUserInfo(null);
   };
 
-  const handleCreateNewProfile = async () => {
-    const res = await api.post<ApiResponse<UserInfo>>('/api/profile/create', {
-      profile: userInfo,
+  const handleCreateNewProfile = async (profile: ProfileData) => {
+    const res = await api.post<ApiResponse<ProfileData>>('/api/profile/create', {
+      profile,
       wallet: walletAddress,
     });
     const { success, message, data } = res.data;
@@ -123,16 +138,17 @@ function ResumePage(): React.ReactElement {
   };
 
   // Handle update of existing profile
-  const handleUpdateProfile = async () => {
+  const handleUpdateProfile = async (profile: ProfileData) => {
     try {
       const res = await api.put<ApiResponse<void>>('/api/profile/update', {
-        profile: userInfo,
+        profile,
       });
       const { success, message } = res.data;
       if (!success) {
         toast.error(message || 'Failed to update profile');
         return;
       }
+      setEditStatus(false);
       toast.success(message || 'Profile updated successfully');
     } catch (error) {
       toast.error('An error occurred while updating profile');
@@ -140,16 +156,16 @@ function ResumePage(): React.ReactElement {
   };
 
   // Handle submission of new profile
-  const handleSubmit = () => {
+  const handleSubmit = (updatedUserInfo: ProfileData) => {
     if (!originalUserInfo) {
       toast.info('No changes detected!');
       return;
     }
     // id is existing, create new profile
     if (!id) {
-      handleCreateNewProfile();
+      handleCreateNewProfile(updatedUserInfo);
     } else {
-      handleUpdateProfile();
+      handleUpdateProfile(updatedUserInfo);
     }
   };
 
@@ -158,7 +174,7 @@ function ResumePage(): React.ReactElement {
     if (!formRef.current) return;
 
     const formData = new FormData(formRef.current);
-    const updatedUserInfo = { ...userInfo } as UserInfo;
+    const updatedUserInfo = { ...profileData } as ProfileData;
 
     for (const [name, value] of formData.entries()) {
       const keys = name.replace(/\[(\w+)\]/g, '.$1').split('.');
@@ -179,14 +195,12 @@ function ResumePage(): React.ReactElement {
         current[lastKey] = value.toString();
       }
     }
-    setUserInfo(updatedUserInfo);
-    setEditStatus(false);
-    handleSubmit();
+    handleSubmit(updatedUserInfo);
   };
 
   // Handle append a new item into profile
   const handleAppend = (path: string) => {
-    setUserInfo((prevUserInfo) => {
+    setProfileData((prevUserInfo) => {
       if (!prevUserInfo) return null;
 
       const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
@@ -241,7 +255,7 @@ function ResumePage(): React.ReactElement {
 
   // Hanlde delete an item
   const handleDeleteItem = (path: string) => {
-    setUserInfo((prevUserInfo) => {
+    setProfileData((prevUserInfo) => {
       if (!prevUserInfo) return null;
 
       const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
@@ -345,7 +359,7 @@ function ResumePage(): React.ReactElement {
 
   // Handle append a section into profile likes summary, work experience, education
   const handleAppendProfile = () => {
-    setUserInfo((prevUserInfo) => {
+    setProfileData((prevUserInfo) => {
       if (!prevUserInfo) return null;
 
       const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
@@ -390,30 +404,46 @@ function ResumePage(): React.ReactElement {
 
   // Render Action bar
   const renderActionBar = () => {
-    if (editStatus) {
-      return (
-        <Button variant="primary" className="btn btn-primary px-5" onClick={debounce(handleSave, 500)}>
-          Submit
-        </Button>
-      );
-    }
+    if (previewMode) return null;
+    if (editStatus) return null;
     return (
       <Button
         variant="primary"
-        className="px-5"
+        className="px-5 w-100"
         disabled={editStatus}
         onClick={() => {
-          setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
-          setEditStatus(true);
+          const read = localStorage.getItem('esc-read');
+          if (!read) {
+            setShowAlert(true);
+          }
+          setPreviewMode(true);
         }}>
-        Edit
+        Preview
       </Button>
     );
   };
 
   // Render the append button group
   const renderAppendBtnGroup = () => {
-    if (!editStatus) return null;
+    if (previewMode) return null;
+    if (!editStatus)
+      return (
+        <div className="d-flex flex-column gap-3">
+          <Button
+            variant="primary"
+            className="px-5 w-100"
+            disabled={editStatus}
+            onClick={() => {
+              setOriginalUserInfo(JSON.parse(JSON.stringify(profileData)));
+              setEditStatus(true);
+            }}>
+            Edit
+          </Button>
+          <Button variant="outline-secondary" className="w-100" onClick={() => navigate('/')}>
+            {'<'} Back
+          </Button>
+        </div>
+      );
     const templates = ['Summary', 'Work Experience', 'Education', 'Common Items'];
     return (
       <div className="d-flex flex-column gap-3">
@@ -434,6 +464,9 @@ function ResumePage(): React.ReactElement {
           </DropdownButton>
         </ButtonGroup>
         <hr />
+        <Button variant="primary" className="w-100 btn btn-primary px-5" onClick={debounce(handleSave, 500)}>
+          Submit
+        </Button>
         <Button variant="secondary" className="w-100" onClick={handleCancel}>
           Cancel
         </Button>
@@ -445,7 +478,7 @@ function ResumePage(): React.ReactElement {
   };
 
   // Render loading spinner while data is being fetched
-  if (!userInfo) {
+  if (!profileData) {
     return (
       <div className="loading-content">
         <div className="d-flex align-items-center gap-3">
@@ -456,77 +489,89 @@ function ResumePage(): React.ReactElement {
   }
 
   return (
-    <div className="resume-page container px-3">
-      <form ref={formRef}>
-        <div className="d-flex flex-column flex-md-row  align-items-center justify-content-between gap-3">
-          <div className="header">
-            <h1>
-              <EditComponent status={editStatus} name="name">
-                {userInfo.name}
-              </EditComponent>
-            </h1>
-          </div>
-          <div className="d-flex justify-content-between align-items-center gap-3">
-            <Button
-              variant="outline-primary"
-              onClick={() => {
-                navigate('/');
-              }}>
-              {'<'} Back
-            </Button>
-            {renderActionBar()}
-          </div>
+    <>
+      {showAlert ? (
+        <div className="alert alert-info alert-dismissible rounded-0 border-0 text-center px-3" role="alert">
+          Press <strong>ESC</strong> key to exit.
+          <button
+            type="button"
+            className="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+            onClick={() => {
+              localStorage.setItem('esc-read', 'true');
+              setShowAlert(false);
+            }}
+          />
         </div>
-        <hr className="mb-3 mb-md-5" />
-        <div className="d-flex flex-column flex-md-row gap-4 ">
-          <div className="basicInfo">
-            {userInfo.basicInfo.map((text, index) => (
-              <p className="mb-0" key={`${text}-${index}`}>
-                <EditComponent
-                  status={editStatus}
-                  name={`basicInfo[${index}]`}
-                  onAppend={() => handleAppend('basicInfo')}
-                  onDelete={() => handleDeleteItem(`basicInfo[${index}]`)}>
-                  {text}
+      ) : null}
+      <div className="resume-page container px-3">
+        <form ref={formRef}>
+          <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
+            <div className="header">
+              <h1>
+                <EditComponent status={editStatus} name="name">
+                  {profileData.name}
                 </EditComponent>
-              </p>
-            ))}
-            <hr />
-            {renderAppendBtnGroup()}
+              </h1>
+            </div>
+            <div className="d-flex justify-content-end align-items-center gap-3">{renderActionBar()}</div>
           </div>
-          <div className="profile flex-1">
-            {userInfo.profiles.map((profile, index) => (
-              <ProfileItem
-                key={index}
-                index={index}
-                profile={profile}
-                profileIndex={index}
-                editStatus={editStatus}
-                onAppend={handleAppend}
-                onDelete={handleDeleteItem}
-              />
-            ))}
+          <hr className="mb-3 mb-md-5" />
+          <div className="d-flex flex-column flex-md-row gap-4 ">
+            <div className="basicInfo">
+              {profileData.basicInfo.map((text, index) => (
+                <p className="mb-3" key={`${text}-${index}`}>
+                  <EditComponent
+                    status={editStatus}
+                    name={`basicInfo[${index}]`}
+                    onAppend={() => handleAppend('basicInfo')}
+                    onDelete={() => handleDeleteItem(`basicInfo[${index}]`)}>
+                    {text}
+                  </EditComponent>
+                </p>
+              ))}
+              <hr />
+              {renderAppendBtnGroup()}
+            </div>
+            <div className="profile flex-1">
+              {profileData.profiles.map((profile, index) => (
+                <ProfileItem
+                  key={index}
+                  index={index}
+                  profile={profile}
+                  profileIndex={index}
+                  editStatus={editStatus}
+                  onAppend={handleAppend}
+                  onDelete={handleDeleteItem}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </form>
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete this profile? <br />
-          This action cannot be undone.
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+        </form>
+        <Modal
+          show={showDeleteModal}
+          onHide={() => {
+            setShowDeleteModal(false);
+          }}>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Deletion</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to delete this profile? <br />
+            This action cannot be undone.
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete}>
+              Delete
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+    </>
   );
 }
 

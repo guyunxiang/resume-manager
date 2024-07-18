@@ -79,6 +79,11 @@
     font-size: 24px;
   }
   .resume-list {
+    gap: 1rem;
     grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 0;
+    border: none;
   }
 }
