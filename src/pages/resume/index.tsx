@@ -93,17 +93,10 @@ function ResumePage(): React.ReactElement {
     }
   }, [walletAddress, newProfile, id]);
 
-  // Save original user info when entering edit mode
-  useEffect(() => {
-    if (editStatus && userInfo) {
-      setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
-    }
-  }, [editStatus, userInfo]);
-
   // Handle cancellation of edit mode
   const handleCancel = () => {
     if (originalUserInfo) {
-      setUserInfo(originalUserInfo);
+      setUserInfo(JSON.parse(JSON.stringify(originalUserInfo)));
     }
     setEditStatus(false);
     setOriginalUserInfo(null);
@@ -183,6 +176,16 @@ function ResumePage(): React.ReactElement {
       handleUpdateProfile(updatedUserInfo);
     } else {
       handleSubmit(updatedUserInfo);
+    }
+  };
+
+  // onClick edit or save button
+  const handleClickEditBtn = () => {
+    if (editStatus) {
+      handleSave();
+    } else {
+      setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
+      setEditStatus(true);
     }
   };
 
@@ -273,7 +276,7 @@ function ResumePage(): React.ReactElement {
             <Button
               variant="primary"
               className={classNames('small py-0', { 'btn btn-primary': editStatus })}
-              onClick={() => (editStatus ? handleSave() : setEditStatus(true))}>
+              onClick={handleClickEditBtn}>
               {editStatus ? 'Save' : 'Edit'}
             </Button>
           </div>
