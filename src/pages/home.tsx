@@ -97,11 +97,6 @@ function Home() {
       <hr className="mb-3 mb-md-5" />
       <div className="card">
         <ul className="resume-list">
-          <li className="create_new">
-            <Link to="/profile/new">
-              <img src={plusIcon} alt="add" className="add" />
-            </Link>
-          </li>
           {profileList?.map(({ _id, name, basicInfo }) => (
             <li key={_id}>
               <Link to={`/profile/${_id}`}>
@@ -117,6 +112,11 @@ function Home() {
             </li>
           ))}
           {renderTemplateProfile()}
+          <li className="create_new">
+            <Link to="/profile/new">
+              <img src={plusIcon} alt="add" className="add" />
+            </Link>
+          </li>
         </ul>
       </div>
     </div>
