@@ -27,6 +27,13 @@ interface WalletQueryRequest extends Request {
   };
 }
 
+interface IdQueryRequest extends Request {
+  query: {
+    id?: string;
+    wallet?: string;
+  };
+}
+
 const userMiddleware: (req: UserRequest, res: Response, next: NextFunction) => void = middleware.user();
 
 router.use('/user', userMiddleware, (req: UserRequest, res: Response) => res.json(req.user || {}));
@@ -64,9 +71,37 @@ router.get('/address/query', async (_: Request, res: Response): Promise<void> =>
   }
 });
 
-// query profile by wallet address
-router.get('/profile/query', async (req: WalletQueryRequest, res: Response): Promise<void> => {
-  const { wallet } = req.query;
+// query profiles list by wallet address
+router.get('/profiles/query', async (req: WalletQueryRequest, res: Response): Promise<void> => {
+  try {
+    const { wallet } = req.query;
+    if (!wallet) {
+      res.status(401).json({
+        success: false,
+        message: 'Please connect your wallet!',
+      });
+      return;
+    }
+    const profiles = await Profile.find({ wallet }).select('name basicInfo');
+    res.status(200).json({
+      success: true,
+      data: profiles,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      logger.error('Error creating profile:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while creating the profile.',
+        data: error.message,
+      });
+    }
+  }
+});
+
+// query profile by id and wallet address
+router.get('/profile/query', async (req: IdQueryRequest, res: Response): Promise<void> => {
+  const { id, wallet } = req.query;
   if (!wallet) {
     res.status(401).json({
       success: false,
@@ -74,7 +109,14 @@ router.get('/profile/query', async (req: WalletQueryRequest, res: Response): Pro
     });
     return;
   }
-  const profile = await Profile.findOne({ wallet });
+  if (!id) {
+    res.status(401).json({
+      success: false,
+      message: 'Profile ID is required!',
+    });
+    return;
+  }
+  const profile = await Profile.findOne({ _id: id, wallet });
   res.status(200).json({
     success: true,
     data: profile,
