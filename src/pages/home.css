@@ -1,41 +1,27 @@
-.logo {
-  height: 6em;
-  padding: 1.5em;
+.home-page {
+  padding: 2rem 0;
+}
+
+.home-page .logo {
+  height: 50px;
   will-change: filter;
   transition: filter 300ms;
 }
 
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-.logo.blocklet:hover {
+.home-page .logo.blocklet:hover {
   filter: drop-shadow(0 0 2em #22cdcdaa);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.home-page h1 {
+  margin: 0;
+  color: var(--primary-color);
 }
 
 .card {
   padding: 2em;
   border-radius: 0;
+  border-style: dashed;
+  border-color: var(--secondary-color);
 }
 
 .read-the-docs {
@@ -43,7 +29,7 @@
 }
 
 .resume-list {
-  gap: 3rem;
+  gap: 2rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
@@ -71,6 +57,10 @@
   justify-content: center;
   height: inherit;
   width: 100%;
+}
+
+.resume-list .create_new a:hover {
+  opacity: .5;
 }
 
 .resume-list .create_new a img {
