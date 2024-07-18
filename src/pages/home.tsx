@@ -66,7 +66,7 @@ function Home() {
   }, [walletAddress]);
 
   return (
-    <div className="home-page container">
+    <div className="home-page container px-3">
       <div className="d-flex align-items-center justify-content-between gap-3">
         <h1>Resume manager</h1>
         <a href="https://www.arcblock.io/docs/blocklet-developer/getting-started" target="_blank" rel="noreferrer">

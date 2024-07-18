@@ -28,6 +28,12 @@ export default function WrappedApp() {
       <Router basename={basename}>
         <App />
       </Router>
+      <footer>
+        Powered by{' '}
+        <a href="http://github.com/guyunxiang" target="_blank" rel="noopener noreferrer">
+          guyunxiang
+        </a>
+      </footer>
       <ToastContainer position="bottom-right" />
     </>
   );

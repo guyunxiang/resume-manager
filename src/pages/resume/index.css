@@ -2,6 +2,7 @@
   padding: 2em 0;
   font-size: 16px;
   line-height: 2;
+  flex: 1;
 }
 
 .resume-page h1 {
@@ -36,7 +37,11 @@
   margin-top: 0;
 }
 
-.resume-page .profile p>input {
+.resume-page .profile p {
+  margin-bottom: 0;
+}
+
+.resume-page .profile p>.input-group {
   margin-bottom: 1em;
 }
 
