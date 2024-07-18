@@ -156,15 +156,7 @@ router.post('/profile/create', async (req: ProfileRequest, res: Response): Promi
 // update profile by wallet address
 router.put('/profile/update', async (req: ProfileRequest, res: Response): Promise<void> => {
   try {
-    const { profile, wallet } = req.body;
-
-    if (!wallet) {
-      res.status(401).json({
-        success: false,
-        message: 'Please connect your wallet!',
-      });
-      return;
-    }
+    const { profile } = req.body;
 
     if (!profile) {
       res.status(400).json({
@@ -174,8 +166,8 @@ router.put('/profile/update', async (req: ProfileRequest, res: Response): Promis
       return;
     }
 
-    const updatedProfile = await Profile.findOneAndUpdate(
-      { wallet },
+    const updatedProfile = await Profile.findByIdAndUpdate(
+      profile._id,
       { $set: profile },
       {
         new: true,
@@ -202,6 +194,33 @@ router.put('/profile/update', async (req: ProfileRequest, res: Response): Promis
       res.status(500).json({
         success: false,
         message: 'An error occurred while updating the profile.',
+        data: error.message,
+      });
+    }
+  }
+});
+
+router.delete('/profile/delete', async (req: IdQueryRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.query;
+    const deletedProfile = await Profile.findByIdAndDelete(id);
+    if (!deletedProfile) {
+      res.status(404).json({
+        success: false,
+        message: 'Profile not found',
+      });
+      return;
+    }
+    res.status(201).json({
+      success: true,
+      message: 'Profile deleted successfully',
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error('Error deleting profile:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while deleting the profile.',
         data: error.message,
       });
     }

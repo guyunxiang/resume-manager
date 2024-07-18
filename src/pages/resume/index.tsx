@@ -1,15 +1,16 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Button, Modal, Spinner } from 'react-bootstrap';
+import { debounce } from 'lodash';
 import classNames from 'classnames';
-import { Button, Spinner } from 'react-bootstrap';
-import { Link, useLocation, useParams } from 'react-router-dom';
 
 import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
 
 import api from '../../libs/api';
-import { DEFAULT_RESUME, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
+import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
 
 import './index.css';
 
@@ -37,18 +38,24 @@ interface ApiResponse<T> {
 }
 
 function ResumePage(): React.ReactElement {
-  const { pathname } = useLocation();
-  const newProfile = pathname === '/profile/new';
+  const navigate = useNavigate();
 
+  const { pathname } = useLocation();
+  // validate if on create profile page
+  const isNewPage = pathname === '/profile/new';
+  // get profile id from url
   const { id } = useParams();
+  // get isTemplate, if true, display template profile
+  const [searchParams] = useSearchParams();
+  const isTemplate = searchParams.get('template') === 'true';
 
   const formRef = useRef<HTMLFormElement>(null);
-
   const [editStatus, setEditStatus] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [originalUserInfo, setOriginalUserInfo] = useState<UserInfo | null>(null);
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -74,24 +81,24 @@ function ResumePage(): React.ReactElement {
       try {
         const res = await api.get<ApiResponse<UserInfo>>(`/api/profile/query?wallet=${wallet}&id=${id}`);
         const { success, data } = res.data;
-        if (success && data) {
-          setUserInfo(data);
-        } else {
-          // Load local data if API call fails
-          setUserInfo(DEFAULT_RESUME);
+        if (!success || !data) {
+          toast.error('Failed to obtain the current profile!');
+          setUserInfo(MINIMUM_RESUME_TEMPLATE);
+          return;
         }
+        setUserInfo(data);
       } catch (error) {
         toast.error('An error occurred while fetching profile data');
       }
     };
-    if (newProfile) {
-      setUserInfo(MINIMUM_RESUME_TEMPLATE);
+    if (isNewPage) {
+      setUserInfo(isTemplate ? RESUME_TEMPLATE : MINIMUM_RESUME_TEMPLATE);
       return;
     }
     if (walletAddress && id) {
       fetchProfileByIdAndWallet(walletAddress);
     }
-  }, [walletAddress, newProfile, id]);
+  }, [walletAddress, isNewPage, id, isTemplate]);
 
   // Handle cancellation of edit mode
   const handleCancel = () => {
@@ -102,44 +109,48 @@ function ResumePage(): React.ReactElement {
     setOriginalUserInfo(null);
   };
 
-  // Handle submission of new profile
-  const handleSubmit = async (formData: UserInfo) => {
-    try {
-      // const res = await api.post<ApiResponse<UserInfo>>('/api/profile/create', {
-      //   profile: formData,
-      //   wallet: walletAddress,
-      // });
-      // const { success, message, data } = res.data;
-      // if (!success || !data) {
-      //   toast.error(message || 'Failed to create profile');
-      //   return;
-      // }
-      setEditStatus(false);
-      setUserInfo(formData); // temp code
-      // setUserInfo(data);
-      // toast.success(message || 'Profile created successfully');
-    } catch (error) {
-      toast.error('An error occurred while creating profile');
+  const handleCreateNewProfile = async () => {
+    const res = await api.post<ApiResponse<UserInfo>>('/api/profile/create', {
+      profile: userInfo,
+      wallet: walletAddress,
+    });
+    const { success, message, data } = res.data;
+    if (!success || !data) {
+      toast.error(message || 'Failed to create profile');
+      return;
     }
+    navigate(`/profile/${data._id}`);
+    toast.success(message || 'Profile created successfully!');
   };
 
   // Handle update of existing profile
-  const handleUpdateProfile = async (formData: UserInfo) => {
+  const handleUpdateProfile = async () => {
     try {
-      // const res = await api.put<ApiResponse<void>>('/api/profile/update', {
-      //   profile: formData,
-      //   wallet: walletAddress,
-      // });
-      // const { success, message } = res.data;
-      // if (!success) {
-      //   toast.error(message || 'Failed to update profile');
-      //   return;
-      // }
-      // toast.success(message || 'Profile updated successfully');
-      setEditStatus(false);
-      setUserInfo(formData);
+      const res = await api.put<ApiResponse<void>>('/api/profile/update', {
+        profile: userInfo,
+      });
+      const { success, message } = res.data;
+      if (!success) {
+        toast.error(message || 'Failed to update profile');
+        return;
+      }
+      toast.success(message || 'Profile updated successfully');
     } catch (error) {
       toast.error('An error occurred while updating profile');
+    }
+  };
+
+  // Handle submission of new profile
+  const handleSubmit = () => {
+    if (!originalUserInfo) {
+      toast.info('No changes detected!');
+      return;
+    }
+    // id is existing, create new profile
+    if (!id) {
+      handleCreateNewProfile();
+    } else {
+      handleUpdateProfile();
     }
   };
 
@@ -169,24 +180,8 @@ function ResumePage(): React.ReactElement {
         current[lastKey] = value.toString();
       }
     }
-    // console.log(updatedUserInfo);
-    // setUserInfo(updatedUserInfo);
-    // setEditStatus(false);
-    if (updatedUserInfo._id) {
-      handleUpdateProfile(updatedUserInfo);
-    } else {
-      handleSubmit(updatedUserInfo);
-    }
-  };
-
-  // onClick edit or save button
-  const handleClickEditBtn = () => {
-    if (editStatus) {
-      handleSave();
-    } else {
-      setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
-      setEditStatus(true);
-    }
+    setUserInfo(updatedUserInfo);
+    setEditStatus(false);
   };
 
   const handleAppend = (path: string) => {
@@ -226,12 +221,12 @@ function ResumePage(): React.ReactElement {
           switch (lastKey) {
             case 'basicInfo':
             case 'descriptions':
-              (current[lastKey] as string[]).push('添加描述内容');
+              (current[lastKey] as string[]).push('Add description content');
               break;
             case 'list':
               (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
-                title: '添加标题',
-                descriptions: ['添加描述内容'],
+                title: 'Add title',
+                descriptions: ['Add description content'],
               });
               break;
             default:
@@ -241,6 +236,60 @@ function ResumePage(): React.ReactElement {
       }
       return newUserInfo;
     });
+  };
+
+  const handleDelete = async () => {
+    try {
+      const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${id}`);
+      const { success, message } = res.data;
+      if (success) {
+        toast.success(message || 'Profile deleted successfully');
+        navigate('/');
+      } else {
+        toast.error(message || 'Failed to delete profile');
+      }
+    } catch (error) {
+      toast.error('An error occurred while deleting the profile');
+    }
+    setShowDeleteModal(false);
+  };
+
+  const renderButtonBar = () => {
+    // edit mode
+    if (editStatus) {
+      return (
+        <>
+          <Button variant="light" className="small" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button variant="primary" className="btn btn-primary px-5" onClick={handleSave}>
+            Save
+          </Button>
+        </>
+      );
+    }
+    return (
+      <>
+        <Link to="/" className="text-underline">
+          {'<'} Back
+        </Link>
+        <Button variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
+          Delete
+        </Button>
+        <Button
+          variant="light"
+          className={classNames('small px-4', { 'btn btn-primary': editStatus })}
+          onClick={() => {
+            setOriginalUserInfo(JSON.parse(JSON.stringify(userInfo)));
+            setEditStatus(true);
+          }}>
+          Edit
+        </Button>
+        <Button variant="primary" className="px-5" onClick={debounce(handleSubmit, 500)}>
+          Submit
+        </Button>
+      </>
+    );
   };
 
   // loading
@@ -265,21 +314,7 @@ function ResumePage(): React.ReactElement {
               </EditComponent>
             </h1>
           </div>
-          <div className="d-flex justify-content-between gap-3">
-            {editStatus ? (
-              <Button variant="light" className="small py-0" onClick={handleCancel}>
-                Cancel
-              </Button>
-            ) : (
-              <Link to="/">Back</Link>
-            )}
-            <Button
-              variant="primary"
-              className={classNames('small py-0', { 'btn btn-primary': editStatus })}
-              onClick={handleClickEditBtn}>
-              {editStatus ? 'Save' : 'Edit'}
-            </Button>
-          </div>
+          <div className="d-flex justify-content-between align-items-center gap-3">{renderButtonBar()}</div>
         </div>
         <hr className="mb-3 mb-md-5" />
         <div className="d-flex flex-column flex-md-row gap-4 ">
@@ -309,6 +344,23 @@ function ResumePage(): React.ReactElement {
           </div>
         </div>
       </form>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this profile? <br />
+          This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
