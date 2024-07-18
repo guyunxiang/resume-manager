@@ -1,10 +1,14 @@
 import React, { useRef, ReactNode } from 'react';
+import { InputGroup, Button, Form } from 'react-bootstrap';
 
 interface EditComponentProps {
   status: boolean;
   type?: string;
   children: ReactNode;
   name: string;
+  append?: boolean;
+  appendText?: string;
+  onAppend?: () => void;
 }
 
 const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComponent({
@@ -12,6 +16,9 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
   type = 'input',
   children,
   name,
+  append = true,
+  appendText = '+',
+  onAppend = () => {},
 }: EditComponentProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -22,7 +29,8 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
   const childText = React.Children.toArray(children)
     .filter(
       (child): child is string | React.ReactElement =>
-        typeof child === 'string' || (typeof child === 'object' && 'props' in child))
+        typeof child === 'string' || (typeof child === 'object' && 'props' in child),
+    )
     .map((child) => (typeof child === 'string' ? child : child.props.children))
     .join('');
 
@@ -38,19 +46,39 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
     );
   }
 
+  if (!append) {
+    return (
+      <Form.Control
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        className="form-control edit-input"
+        type="text"
+        defaultValue={childText}
+        name={name}
+      />
+    );
+  }
+
   return (
-    <input
-      ref={inputRef as React.RefObject<HTMLInputElement>}
-      className="form-control edit-input"
-      type="text"
-      defaultValue={childText}
-      name={name}
-    />
+    <InputGroup>
+      <Form.Control
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        className="form-control edit-input"
+        type="text"
+        defaultValue={childText}
+        name={name}
+      />
+      <Button variant="outline-secondary" onClick={onAppend}>
+        {appendText}
+      </Button>
+    </InputGroup>
   );
 });
 
 EditComponent.defaultProps = {
   type: 'input',
+  append: true,
+  appendText: '+',
+  onAppend: () => {},
 };
 
 export default EditComponent;

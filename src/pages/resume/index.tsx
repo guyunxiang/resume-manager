@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import classNames from 'classnames';
-import { Button, Spinner, Dropdown, DropdownButton, ButtonGroup } from 'react-bootstrap';
+import { Button, Spinner } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
 
 import EditComponent from '../../components/edit-component';
@@ -10,8 +10,6 @@ import ProfileItem from '../../components/profile-item';
 
 import api from '../../libs/api';
 import { DEFAULT_RESUME, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
-
-import plusIcon from '../../assets/plus-lg.svg';
 
 import './index.css';
 
@@ -111,18 +109,19 @@ function ResumePage(): React.ReactElement {
   // Handle submission of new profile
   const handleSubmit = async (formData: UserInfo) => {
     try {
-      const res = await api.post<ApiResponse<UserInfo>>('/api/profile/create', {
-        profile: formData,
-        wallet: walletAddress,
-      });
-      const { success, message, data } = res.data;
+      // const res = await api.post<ApiResponse<UserInfo>>('/api/profile/create', {
+      //   profile: formData,
+      //   wallet: walletAddress,
+      // });
+      // const { success, message, data } = res.data;
+      // if (!success || !data) {
+      //   toast.error(message || 'Failed to create profile');
+      //   return;
+      // }
       setEditStatus(false);
-      if (!success || !data) {
-        toast.error(message || 'Failed to create profile');
-        return;
-      }
-      setUserInfo(data);
-      toast.success(message || 'Profile created successfully');
+      setUserInfo(formData); // temp code
+      // setUserInfo(data);
+      // toast.success(message || 'Profile created successfully');
     } catch (error) {
       toast.error('An error occurred while creating profile');
     }
@@ -131,17 +130,18 @@ function ResumePage(): React.ReactElement {
   // Handle update of existing profile
   const handleUpdateProfile = async (formData: UserInfo) => {
     try {
-      const res = await api.put<ApiResponse<void>>('/api/profile/update', {
-        profile: formData,
-        wallet: walletAddress,
-      });
-      const { success, message } = res.data;
+      // const res = await api.put<ApiResponse<void>>('/api/profile/update', {
+      //   profile: formData,
+      //   wallet: walletAddress,
+      // });
+      // const { success, message } = res.data;
+      // if (!success) {
+      //   toast.error(message || 'Failed to update profile');
+      //   return;
+      // }
+      // toast.success(message || 'Profile updated successfully');
       setEditStatus(false);
-      if (!success) {
-        toast.error(message || 'Failed to update profile');
-        return;
-      }
-      toast.success(message || 'Profile updated successfully');
+      setUserInfo(formData);
     } catch (error) {
       toast.error('An error occurred while updating profile');
     }
@@ -173,112 +173,66 @@ function ResumePage(): React.ReactElement {
         current[lastKey] = value.toString();
       }
     }
-    console.log(updatedUserInfo);
-    setUserInfo(updatedUserInfo);
-    setEditStatus(false);
-    // cache
-    // if (updatedUserInfo._id) {
-    //   handleUpdateProfile(updatedUserInfo);
-    // } else {
-    //   handleSubmit(updatedUserInfo);
-    // }
-  };
-
-  const handleAddBasicInfo = () => {
-    if (userInfo) {
-      setUserInfo({
-        ...userInfo,
-        basicInfo: [...userInfo.basicInfo, ''],
-      });
+    // console.log(updatedUserInfo);
+    // setUserInfo(updatedUserInfo);
+    // setEditStatus(false);
+    if (updatedUserInfo._id) {
+      handleUpdateProfile(updatedUserInfo);
+    } else {
+      handleSubmit(updatedUserInfo);
     }
   };
 
-  const renderPlusItem = () => {
-    if (!editStatus) return null;
-    return (
-      <div className="append-item" onClick={handleAddBasicInfo}>
-        <img src={plusIcon} alt="plus" />
-      </div>
-    );
-  };
-
-  const handleSelectTemplate = (eventKey: string | null) => {
-    const index = parseInt(eventKey ?? '0', 10);
-    setSelectedTemplate(index);
-  };
-
-  const handleAddGroup = () => {
-    if (selectedTemplate === null) {
-      return;
-    }
-
+  const handleAppend = (path: string) => {
     setUserInfo((prevUserInfo) => {
-      if (!prevUserInfo) {
-        return null;
-      }
+      if (!prevUserInfo) return null;
 
-      const newProfiles = [...prevUserInfo.profiles];
+      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+      const keys = path.split('.');
+      let current: any = newUserInfo;
 
-      switch (selectedTemplate) {
-        case 0:
-          newProfiles.push({
-            title: '新建通用模板',
-            descriptions: ['请在这里添加描述'],
-          });
-          break;
-        case 1:
-          newProfiles.push({
-            title: '新建个人简介',
-            summary: '请在这里添加个人简介',
-          });
-          break;
-        case 2:
-          newProfiles.push({
-            title: '新建工作经历',
-            list: [
-              {
-                title: '新工作经历项目',
-                descriptions: ['请在这里添加工作描述'],
-              },
-            ],
-          });
-          break;
-        default:
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (key && key.includes('[')) {
+          const parts = key.split('[');
+          const arrayName = parts[0];
+          const indexStr = parts[1];
+          if (arrayName && indexStr) {
+            const index = parseInt(indexStr.replace(']', ''), 10);
+            if (!Number.isNaN(index)) {
+              current = current[arrayName][index];
+            } else {
+              return prevUserInfo;
+            }
+          } else {
+            return prevUserInfo;
+          }
+        } else if (key) {
+          current = current[key];
+        } else {
           return prevUserInfo;
+        }
       }
 
-      return {
-        ...prevUserInfo,
-        profiles: newProfiles,
-      };
+      const lastKey = keys[keys.length - 1];
+      if (lastKey && Array.isArray(current[lastKey as keyof typeof current])) {
+        switch (lastKey) {
+          case 'basicInfo':
+          case 'descriptions':
+            (current[lastKey] as string[]).push('添加描述内容');
+            break;
+          case 'list':
+            (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
+              title: '添加标题',
+              descriptions: ['添加描述内容'],
+            });
+            break;
+          default:
+            console.warn(`Unhandled array type: ${lastKey}`);
+        }
+      }
+      return newUserInfo;
     });
-
-    setSelectedTemplate(0);
-  };
-
-  const renderPlusGroup = () => {
-    if (!editStatus) return null;
-
-    const titles = ['通用模版', '个人简介', '工作经历'];
-
-    return (
-      <div className="d-flex justify-content-end">
-        <ButtonGroup>
-          <Button onClick={handleAddGroup}>添加</Button>
-          <DropdownButton
-            as={ButtonGroup}
-            onSelect={handleSelectTemplate}
-            title={titles[selectedTemplate]}
-            id="bg-nested-dropdown">
-            {titles.map((title, index) => (
-              <Dropdown.Item eventKey={index} key={title}>
-                {title}
-              </Dropdown.Item>
-            ))}
-          </DropdownButton>
-        </ButtonGroup>
-      </div>
-    );
   };
 
   // loading
@@ -295,10 +249,10 @@ function ResumePage(): React.ReactElement {
   return (
     <div className="resume-page container px-3">
       <form ref={formRef}>
-        <div className="d-flex align-items-center justify-content-between">
+        <div className="d-flex align-items-center justify-content-between gap-3">
           <div className="header">
             <h1>
-              <EditComponent status={editStatus} name="name">
+              <EditComponent status={editStatus} name="name" append={false}>
                 {userInfo.name}
               </EditComponent>
             </h1>
@@ -306,16 +260,16 @@ function ResumePage(): React.ReactElement {
           <div className="d-flex justify-content-between gap-3">
             {editStatus ? (
               <Button variant="light" className="small py-0" onClick={handleCancel}>
-                取消
+                Cancel
               </Button>
             ) : (
-              <Link to="/">返回</Link>
+              <Link to="/">Back</Link>
             )}
             <Button
               variant="primary"
               className={classNames('small py-0', { 'btn btn-primary': editStatus })}
               onClick={() => (editStatus ? handleSave() : setEditStatus(true))}>
-              {editStatus ? '保存' : '编辑'}
+              {editStatus ? 'Save' : 'Edit'}
             </Button>
           </div>
         </div>
@@ -324,19 +278,26 @@ function ResumePage(): React.ReactElement {
           <div className="basicInfo">
             {userInfo.basicInfo.map((text, index) => (
               <p className="mb-3" key={`${text}-${index}`}>
-                <EditComponent status={editStatus} name={`basicInfo[${index}]`}>
+                <EditComponent
+                  status={editStatus}
+                  name={`basicInfo[${index}]`}
+                  onAppend={() => handleAppend('basicInfo')}>
                   {text}
                 </EditComponent>
               </p>
             ))}
-            {renderPlusItem()}
             <hr />
           </div>
           <div className="profile flex-1">
             {userInfo.profiles.map((profile, index) => (
-              <ProfileItem profile={profile} profileIndex={index} editStatus={editStatus} key={index} />
+              <ProfileItem
+                key={index}
+                profile={profile}
+                profileIndex={index}
+                editStatus={editStatus}
+                onAppend={handleAppend}
+              />
             ))}
-            {renderPlusGroup()}
           </div>
         </div>
       </form>

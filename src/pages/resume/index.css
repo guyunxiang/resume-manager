@@ -47,8 +47,8 @@
   color: rgb(57, 124, 161);
 }
 
-.resume-page h2>input,
-.resume-page h2>input:focus {
+.resume-page h2 input,
+.resume-page h2 input:focus {
   font-size: 20px;
   font-weight: 600;
   color: rgb(57, 124, 161);
@@ -61,10 +61,17 @@
   color: rgb(57, 124, 161);
 }
 
-.resume-page h3>input,
-.resume-page h3>input:focus {
+.resume-page h3 input,
+.resume-page h3 input:focus {
   font-size: 16px;
   color: rgb(57, 124, 161);
+}
+
+.resume-page p button,
+.resume-page h2 button,
+.resume-page h3 button {
+  border-style: dashed;
+  border-color: var(--bs-border-color);
 }
 
 .resume-page .edit-input,

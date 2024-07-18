@@ -1,7 +1,6 @@
+/* eslint-disable react/no-array-index-key */
 import React from 'react';
 import EditComponent from './edit-component';
-
-import plusIcon from '../assets/plus-lg.svg';
 
 interface ListItem {
   title: string;
@@ -19,12 +18,14 @@ interface ProfileItemProps {
   profile: Profile;
   profileIndex: number;
   editStatus: boolean;
+  onAppend: (path: string) => void;
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem({
   profile,
   profileIndex,
   editStatus,
+  onAppend,
 }: ProfileItemProps) {
   return (
     <div>
@@ -32,7 +33,8 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
         <EditComponent
           key={`profile-title-${profileIndex}`}
           status={editStatus}
-          name={`profiles[${profileIndex}].title`}>
+          name={`profiles[${profileIndex}].title`}
+          append={false}>
           {profile.title}
         </EditComponent>
       </h2>
@@ -45,25 +47,32 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
       )}
       {profile.descriptions &&
         profile.descriptions.map((description, descIndex) => (
-          <p key={description}>
-            <EditComponent status={editStatus} name={`profiles[${profileIndex}].descriptions[${descIndex}]`}>
+          <p key={`${description}_${descIndex}`}>
+            <EditComponent
+              status={editStatus}
+              name={`profiles[${profileIndex}].descriptions[${descIndex}]`}
+              onAppend={() => onAppend(`profiles[${profileIndex}].descriptions`)}>
               {description}
             </EditComponent>
           </p>
         ))}
       {profile.list &&
         profile.list.map((item, itemIndex) => (
-          <div key={item.title}>
+          <div key={`${item.title}_${itemIndex}`}>
             <h3 className="subTitle">
-              <EditComponent status={editStatus} name={`profiles[${profileIndex}].list[${itemIndex}].title`}>
+              <EditComponent
+                status={editStatus}
+                name={`profiles[${profileIndex}].list[${itemIndex}].title`}
+                onAppend={() => onAppend(`profiles[${profileIndex}].list`)}>
                 {item.title}
               </EditComponent>
             </h3>
             {item.descriptions.map((description, descIndex) => (
-              <p key={description}>
+              <p key={`${description}_${itemIndex}_${descIndex}`}>
                 <EditComponent
                   status={editStatus}
-                  name={`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`}>
+                  name={`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`}
+                  onAppend={() => onAppend(`profiles[${profileIndex}].list[${itemIndex}].descriptions`)}>
                   {description}
                 </EditComponent>
               </p>
