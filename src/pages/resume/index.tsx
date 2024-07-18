@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import classNames from 'classnames';
 import { Button, Spinner } from 'react-bootstrap';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
@@ -40,6 +40,8 @@ function ResumePage(): React.ReactElement {
   const { pathname } = useLocation();
   const newProfile = pathname === '/profile/new';
 
+  const { id } = useParams();
+
   const formRef = useRef<HTMLFormElement>(null);
 
   const [editStatus, setEditStatus] = useState<boolean>(false);
@@ -68,9 +70,9 @@ function ResumePage(): React.ReactElement {
 
   // Fetch profile data by wallet address
   useEffect(() => {
-    const fetchProfileByWallet = async (wallet: string) => {
+    const fetchProfileByIdAndWallet = async (wallet: string) => {
       try {
-        const res = await api.get<ApiResponse<UserInfo>>(`/api/profile/query?wallet=${wallet}`);
+        const res = await api.get<ApiResponse<UserInfo>>(`/api/profile/query?wallet=${wallet}&id=${id}`);
         const { success, data } = res.data;
         if (success && data) {
           setUserInfo(data);
@@ -82,13 +84,14 @@ function ResumePage(): React.ReactElement {
         toast.error('An error occurred while fetching profile data');
       }
     };
-    if (walletAddress && !newProfile) {
-      fetchProfileByWallet(walletAddress);
-    }
     if (newProfile) {
       setUserInfo(MINIMUM_RESUME_TEMPLATE);
+      return;
     }
-  }, [walletAddress, newProfile]);
+    if (walletAddress && id) {
+      fetchProfileByIdAndWallet(walletAddress);
+    }
+  }, [walletAddress, newProfile, id]);
 
   // Save original user info when entering edit mode
   useEffect(() => {
@@ -215,20 +218,22 @@ function ResumePage(): React.ReactElement {
       }
 
       const lastKey = keys[keys.length - 1];
-      if (lastKey && Array.isArray(current[lastKey as keyof typeof current])) {
-        switch (lastKey) {
-          case 'basicInfo':
-          case 'descriptions':
-            (current[lastKey] as string[]).push('添加描述内容');
-            break;
-          case 'list':
-            (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
-              title: '添加标题',
-              descriptions: ['添加描述内容'],
-            });
-            break;
-          default:
-            console.warn(`Unhandled array type: ${lastKey}`);
+      if (lastKey) {
+        if (Array.isArray(current[lastKey as keyof typeof current])) {
+          switch (lastKey) {
+            case 'basicInfo':
+            case 'descriptions':
+              (current[lastKey] as string[]).push('添加描述内容');
+              break;
+            case 'list':
+              (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
+                title: '添加标题',
+                descriptions: ['添加描述内容'],
+              });
+              break;
+            default:
+              console.warn(`Unhandled array type: ${lastKey}`);
+          }
         }
       }
       return newUserInfo;
