@@ -34,7 +34,7 @@ export default function WrappedApp() {
           guyunxiang
         </a>
       </footer>
-      <ToastContainer position="bottom-right" />
+      <ToastContainer position="bottom-right" pauseOnHover={false} autoClose={3000} />
     </>
   );
 }
