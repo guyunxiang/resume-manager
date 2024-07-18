@@ -1,0 +1,116 @@
+.resume-page {
+  padding: 2em 0;
+  font-size: 16px;
+  line-height: 2;
+}
+
+.resume-page h1 {
+  margin: 0;
+}
+
+.resume-page h1>span {
+  display: block;
+  border: 1px solid transparent;
+  line-height: 1.5;
+  font-size: 32px;
+  color: var(--primary-color);
+}
+
+.resume-page h1>input,
+.resume-page h1>input:focus {
+  font-weight: 500;
+  font-size: 32px;
+  color: var(--primary-color);
+}
+
+.resume-page .basicInfo {
+  min-width: 25%;
+  max-width: 250px;
+}
+
+.resume-page .profile {
+  flex: 1;
+}
+
+.resume-page .profile>div:first-child>h2 {
+  margin-top: 0;
+}
+
+.resume-page .profile p>input {
+  margin-bottom: 1em;
+}
+
+.resume-page h2 {
+  margin: 1em 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgb(57, 124, 161);
+}
+
+.resume-page h2>input,
+.resume-page h2>input:focus {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgb(57, 124, 161);
+}
+
+.resume-page h3 {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  font-size: 16px;
+  color: rgb(57, 124, 161);
+}
+
+.resume-page h3>input,
+.resume-page h3>input:focus {
+  font-size: 16px;
+  color: rgb(57, 124, 161);
+}
+
+.resume-page .edit-input,
+.resume-page .edit-textarea {
+  border-style: dashed;
+  border-radius: 0;
+}
+
+.resume-page .edit-textarea {
+  line-height: 2;
+}
+
+.place-span {
+  display: block;
+  /* padding: .375rem .75rem;
+  border-color: transparent;
+  border-style: dashed;
+  border-radius: 0;
+  border-width: 1px;
+  word-break: break-all; */
+}
+
+.append-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-style: dashed;
+  border-radius: 0;
+  border-width: 1px;
+  border-color: var(--bs-border-color);
+  cursor: pointer;
+}
+
+
+/* `md` applies to small devices (landscape phones, less than 768px) */
+@media (max-width: 767.98px) {
+  .resume-page .basicInfo {
+    max-width: 100%;
+  }
+}
+
+.loading-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
