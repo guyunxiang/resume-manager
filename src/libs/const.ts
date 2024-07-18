@@ -68,25 +68,25 @@ export const RESUME_TEMPLATE = {
 };
 
 export const MINIMUM_RESUME_TEMPLATE = {
-  name: '姓名',
-  basicInfo: ['邮箱'],
+  name: 'Name',
+  basicInfo: ['Email Address'],
   profiles: [
     {
-      title: '个人简介',
-      summary: '自我介绍',
+      title: 'Summary',
+      summary: 'Personal Summary',
     },
     {
-      title: '工作经历',
+      title: 'Work Experience',
       list: [
         {
-          title: '公司名称',
-          descriptions: ['担任职务'],
+          title: "Company's Name",
+          descriptions: ['Job Title'],
         },
       ],
     },
     {
-      title: '教育背景',
-      descriptions: ['大学名称'],
+      title: 'Education',
+      descriptions: ['University'],
     },
   ],
 };
