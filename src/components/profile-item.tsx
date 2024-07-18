@@ -1,4 +1,5 @@
 /* eslint-disable react/no-array-index-key */
+/* Index keys are used to locate child components */
 import React from 'react';
 import EditComponent from './edit-component';
 
