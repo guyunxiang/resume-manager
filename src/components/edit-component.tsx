@@ -18,7 +18,7 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
   name,
   append = true,
   appendText = '+',
-  onAppend = () => {},
+  onAppend = () => { },
 }: EditComponentProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -36,7 +36,8 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
 
   if (type === 'textarea') {
     return (
-      <textarea
+      <Form.Control
+        as="textarea"
         ref={inputRef as React.RefObject<HTMLTextAreaElement>}
         className="form-control edit-textarea"
         rows={5}
@@ -45,7 +46,7 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
       />
     );
   }
-
+  
   if (!append) {
     return (
       <Form.Control
@@ -78,7 +79,7 @@ EditComponent.defaultProps = {
   type: 'input',
   append: true,
   appendText: '+',
-  onAppend: () => {},
+  onAppend: () => { },
 };
 
 export default EditComponent;
