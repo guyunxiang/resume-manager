@@ -1,3 +1,5 @@
+/* eslint-disable react/require-default-props */
+/* defaultProps will be removed from memo components in a future major release */
 import React, { useRef, ReactNode } from 'react';
 import { InputGroup, Button, Form } from 'react-bootstrap';
 
@@ -18,7 +20,7 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
   name,
   append = true,
   appendText = '+',
-  onAppend = () => { },
+  onAppend = () => {},
 }: EditComponentProps) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -46,7 +48,7 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
       />
     );
   }
-  
+
   if (!append) {
     return (
       <Form.Control
@@ -74,12 +76,5 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
     </InputGroup>
   );
 });
-
-EditComponent.defaultProps = {
-  type: 'input',
-  append: true,
-  appendText: '+',
-  onAppend: () => { },
-};
 
 export default EditComponent;
