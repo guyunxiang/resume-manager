@@ -3,10 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Button, ButtonGroup, Dropdown, DropdownButton, Modal, Spinner } from 'react-bootstrap';
-import { debounce } from 'lodash';
 
 import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
+import Loading from '../../components/loading';
 
 import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
 import api from '../../libs/api';
@@ -19,10 +19,12 @@ interface ProfileData {
   name: string;
   basicInfo: string[];
   profiles: Array<{
+    _id?: string;
     title: string;
     summary?: string;
     descriptions?: string[];
     list?: Array<{
+      _id?: string;
       title: string;
       descriptions: string[];
     }>;
@@ -43,7 +45,7 @@ function ResumePage(): React.ReactElement {
   // Validate if on create profile page
   const isNewPage = pathname === '/profile/new';
   // Get profile id from url
-  const { id } = useParams();
+  const { id: profileId } = useParams();
   // Get isTemplate, if true, display template profile
   const [searchParams] = useSearchParams();
   const isTemplate = searchParams.get('template') === 'true';
@@ -57,6 +59,7 @@ function ResumePage(): React.ReactElement {
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [previewMode, setPreviewMode] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Preview mode
   useEffect(() => {
@@ -93,7 +96,7 @@ function ResumePage(): React.ReactElement {
   useEffect(() => {
     const fetchProfileByIdAndWallet = async (wallet: string) => {
       try {
-        const res = await api.get<ApiResponse<ProfileData>>(`/api/profile/query?wallet=${wallet}&id=${id}`);
+        const res = await api.get<ApiResponse<ProfileData>>(`/api/profile/query?wallet=${wallet}&id=${profileId}`);
         const { success, data } = res.data;
         if (!success || !data) {
           toast.error('Failed to obtain the current profile!');
@@ -109,10 +112,10 @@ function ResumePage(): React.ReactElement {
       setProfileData(isTemplate ? RESUME_TEMPLATE : MINIMUM_RESUME_TEMPLATE);
       return;
     }
-    if (walletAddress && id) {
+    if (walletAddress && profileId) {
       fetchProfileByIdAndWallet(walletAddress);
     }
-  }, [walletAddress, isNewPage, id, isTemplate]);
+  }, [walletAddress, isNewPage, profileId, isTemplate]);
 
   // Handle cancellation of edit mode
   const handleCancel = () => {
@@ -124,25 +127,35 @@ function ResumePage(): React.ReactElement {
   };
 
   const handleCreateNewProfile = async (profile: ProfileData) => {
-    const res = await api.post<ApiResponse<ProfileData>>('/api/profile/create', {
-      profile,
-      wallet: walletAddress,
-    });
-    const { success, message, data } = res.data;
-    if (!success || !data) {
-      toast.error(message || 'Failed to create profile');
-      return;
+    try {
+      setLoading(true);
+      const res = await api.post<ApiResponse<ProfileData>>('/api/profile/create', {
+        profile,
+        wallet: walletAddress,
+      });
+      setLoading(false);
+      const { success, message, data } = res.data;
+      if (!success || !data) {
+        toast.error(message || 'Failed to create profile');
+        return;
+      }
+      navigate(`/profile/${data._id}`);
+      setEditStatus(false);
+      toast.success(message || 'Profile created successfully!');
+    } catch (error) {
+      setLoading(false);
+      toast.error('An error occurred while create profile');
     }
-    navigate(`/profile/${data._id}`);
-    toast.success(message || 'Profile created successfully!');
   };
 
   // Handle update of existing profile
   const handleUpdateProfile = async (profile: ProfileData) => {
     try {
+      setLoading(true);
       const res = await api.put<ApiResponse<void>>('/api/profile/update', {
         profile,
       });
+      setLoading(false);
       const { success, message } = res.data;
       if (!success) {
         toast.error(message || 'Failed to update profile');
@@ -151,34 +164,35 @@ function ResumePage(): React.ReactElement {
       setEditStatus(false);
       toast.success(message || 'Profile updated successfully');
     } catch (error) {
+      setLoading(false);
       toast.error('An error occurred while updating profile');
     }
   };
 
   // Handle submission of new profile
-  const handleSubmit = (updatedUserInfo: ProfileData) => {
+  const handleSubmit = (updateProfileData: ProfileData) => {
     if (!originalUserInfo) {
       toast.info('No changes detected!');
       return;
     }
     // id is existing, create new profile
-    if (!id) {
-      handleCreateNewProfile(updatedUserInfo);
+    if (!profileId) {
+      handleCreateNewProfile(updateProfileData);
     } else {
-      handleUpdateProfile(updatedUserInfo);
+      handleUpdateProfile(updateProfileData);
     }
   };
 
   // Handle save action
-  const handleSave = () => {
+  const handleSave = (submit?: boolean) => {
     if (!formRef.current) return;
 
     const formData = new FormData(formRef.current);
-    const updatedUserInfo = { ...profileData } as ProfileData;
+    const updateProfileData = { ...profileData } as ProfileData;
 
     for (const [name, value] of formData.entries()) {
       const keys = name.replace(/\[(\w+)\]/g, '.$1').split('.');
-      let current: any = updatedUserInfo;
+      let current: any = updateProfileData;
 
       for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
@@ -195,17 +209,21 @@ function ResumePage(): React.ReactElement {
         current[lastKey] = value.toString();
       }
     }
-    handleSubmit(updatedUserInfo);
+    setProfileData(updateProfileData);
+    if (submit) {
+      handleSubmit(updateProfileData);
+    }
   };
 
   // Handle append a new item into profile
   const handleAppend = (path: string) => {
-    setProfileData((prevUserInfo) => {
-      if (!prevUserInfo) return null;
+    handleSave();
+    setProfileData((preProfileData) => {
+      if (!preProfileData) return null;
 
-      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+      const newProfileData = JSON.parse(JSON.stringify(preProfileData));
       const keys = path.split('.');
-      let current: any = newUserInfo;
+      let current: any = newProfileData;
 
       for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
@@ -218,15 +236,15 @@ function ResumePage(): React.ReactElement {
             if (!Number.isNaN(index)) {
               current = current[arrayName][index];
             } else {
-              return prevUserInfo;
+              return preProfileData;
             }
           } else {
-            return prevUserInfo;
+            return preProfileData;
           }
         } else if (key) {
           current = current[key];
         } else {
-          return prevUserInfo;
+          return preProfileData;
         }
       }
 
@@ -249,18 +267,19 @@ function ResumePage(): React.ReactElement {
           }
         }
       }
-      return newUserInfo;
+      return newProfileData;
     });
   };
 
   // Hanlde delete an item
   const handleDeleteItem = (path: string) => {
-    setProfileData((prevUserInfo) => {
-      if (!prevUserInfo) return null;
+    handleSave();
+    setProfileData((preProfileData) => {
+      if (!preProfileData) return null;
 
-      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+      const newProfileData = JSON.parse(JSON.stringify(preProfileData));
       const keys = path.split('.');
-      let current: any = newUserInfo;
+      let current: any = newProfileData;
       let parent: any = null;
       let lastArrayName: string | null = null;
 
@@ -275,7 +294,7 @@ function ResumePage(): React.ReactElement {
               lastArrayName = arrayName;
               current = current[arrayName][index];
             } else {
-              return prevUserInfo;
+              return preProfileData;
             }
           }
         } else if (key) {
@@ -283,7 +302,7 @@ function ResumePage(): React.ReactElement {
           lastArrayName = key;
           current = current[key];
         } else {
-          return prevUserInfo;
+          return preProfileData;
         }
       }
 
@@ -325,7 +344,7 @@ function ResumePage(): React.ReactElement {
 
       // Remove empty arrays or objects in profiles
       if (lastArrayName === 'profiles') {
-        newUserInfo.profiles = newUserInfo.profiles.filter((profile: any) => {
+        newProfileData.profiles = newProfileData.profiles.filter((profile: any) => {
           if (
             profile.summary ||
             (profile.descriptions && profile.descriptions.length) ||
@@ -336,14 +355,14 @@ function ResumePage(): React.ReactElement {
           return false;
         });
       }
-      return newUserInfo;
+      return newProfileData;
     });
   };
 
   // Handle delete profile
   const handleDelete = async () => {
     try {
-      const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${id}`);
+      const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${profileId}`);
       const { success, message } = res.data;
       if (success) {
         toast.success(message || 'Profile deleted successfully');
@@ -359,20 +378,20 @@ function ResumePage(): React.ReactElement {
 
   // Handle append a section into profile likes summary, work experience, education
   const handleAppendProfile = () => {
-    setProfileData((prevUserInfo) => {
-      if (!prevUserInfo) return null;
+    setProfileData((preProfileData) => {
+      if (!preProfileData) return null;
 
-      const newUserInfo = JSON.parse(JSON.stringify(prevUserInfo));
+      const newProfileData = JSON.parse(JSON.stringify(preProfileData));
 
       switch (selectedTemplate) {
         case 0:
-          newUserInfo.profiles.push({
+          newProfileData.profiles.push({
             title: 'Summary',
             summary: 'Add your summary here',
           });
           break;
         case 1:
-          newUserInfo.profiles.push({
+          newProfileData.profiles.push({
             title: 'Work Experience',
             list: [
               {
@@ -383,13 +402,13 @@ function ResumePage(): React.ReactElement {
           });
           break;
         case 2:
-          newUserInfo.profiles.push({
+          newProfileData.profiles.push({
             title: 'Education',
             descriptions: ['Add your education details here'],
           });
           break;
         case 3:
-          newUserInfo.profiles.push({
+          newProfileData.profiles.push({
             title: 'Common Items',
             descriptions: ['Add common items here'],
           });
@@ -398,7 +417,7 @@ function ResumePage(): React.ReactElement {
           break;
       }
 
-      return newUserInfo;
+      return newProfileData;
     });
   };
 
@@ -464,7 +483,12 @@ function ResumePage(): React.ReactElement {
           </DropdownButton>
         </ButtonGroup>
         <hr />
-        <Button variant="primary" className="w-100 btn btn-primary px-5" onClick={debounce(handleSave, 500)}>
+        <Button
+          variant="primary"
+          className="w-100 btn btn-primary px-5"
+          disabled={loading}
+          onClick={() => handleSave(true)}>
+          <Loading loading={loading} />
           Submit
         </Button>
         <Button variant="secondary" className="w-100" onClick={handleCancel}>
@@ -537,8 +561,7 @@ function ResumePage(): React.ReactElement {
             <div className="profile flex-1">
               {profileData.profiles.map((profile, index) => (
                 <ProfileItem
-                  key={index}
-                  index={index}
+                  key={profile._id || index}
                   profile={profile}
                   profileIndex={index}
                   editStatus={editStatus}
@@ -566,6 +589,7 @@ function ResumePage(): React.ReactElement {
               Cancel
             </Button>
             <Button variant="danger" onClick={handleDelete}>
+              <Loading loading={loading} />
               Delete
             </Button>
           </Modal.Footer>

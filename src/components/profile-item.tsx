@@ -1,14 +1,18 @@
+/* eslint-disable react/require-default-props */
 /* eslint-disable react/no-array-index-key */
 /* Index keys are used to locate child components */
 import React from 'react';
+
 import EditComponent from './edit-component';
 
 interface ListItem {
+  _id?: string;
   title: string;
   descriptions: string[];
 }
 
 interface Profile {
+  _id?: string;
   title: string;
   summary?: string;
   descriptions?: string[];
@@ -16,7 +20,6 @@ interface Profile {
 }
 
 interface ProfileItemProps {
-  index: number;
   profile: Profile;
   profileIndex: number;
   editStatus: boolean;
@@ -25,7 +28,6 @@ interface ProfileItemProps {
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem({
-  index,
   profile,
   profileIndex,
   editStatus,
@@ -33,7 +35,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
   onDelete,
 }: ProfileItemProps) {
   return (
-    <div key={index}>
+    <div>
       <h2 className="title">
         <EditComponent
           status={editStatus}
@@ -70,7 +72,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
         ))}
       {profile.list &&
         profile.list.map((item, itemIndex) => (
-          <div key={`${item.title}_${itemIndex}`}>
+          <div key={item._id || itemIndex} id={item._id}>
             <h3 className="subTitle">
               <EditComponent
                 status={editStatus}
