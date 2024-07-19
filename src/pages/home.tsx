@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useLocaleContext } from '@arcblock/ux/lib/Locale/context';
 
-import blockletLogo from '../assets/blocklet.svg';
 import plusIcon from '../assets/plus-lg.svg';
 
 import { RESUME_TEMPLATE } from '../libs/const';
@@ -30,6 +30,8 @@ type ProfileList = ProfileItem[];
 function Home() {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [profileList, setProfileList] = useState<ProfileList | null>(null);
+
+  const { t } = useLocaleContext();
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -88,11 +90,8 @@ function Home() {
 
   return (
     <div className="home-page container px-3">
-      <div className="d-flex align-items-center justify-content-between gap-3">
-        <h1>Resume manager</h1>
-        <a href="https://www.arcblock.io/docs/blocklet-developer/getting-started" target="_blank" rel="noreferrer">
-          <img src={blockletLogo} className="logo blocklet" alt="Blocklet logo" />
-        </a>
+      <div className="header d-flex align-items-center justify-content-between gap-3">
+        <h1>{t('appName')}</h1>
       </div>
       <hr className="mb-3 mb-md-5" />
       <div className="card">

@@ -8,6 +8,8 @@ import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
 import Loading from '../../components/loading';
 
+import { usePreviewContext } from '../../components/preview-context';
+
 import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
 import api from '../../libs/api';
 
@@ -50,6 +52,9 @@ function ResumePage(): React.ReactElement {
   const [searchParams] = useSearchParams();
   const isTemplate = searchParams.get('template') === 'true';
 
+  // Preview mode
+  const { previewMode, setPreviewMode } = usePreviewContext();
+
   const formRef = useRef<HTMLFormElement>(null);
   const [editStatus, setEditStatus] = useState<boolean>(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -57,7 +62,7 @@ function ResumePage(): React.ReactElement {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
-  const [previewMode, setPreviewMode] = useState(false);
+  // const [previewMode, setPreviewMode] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -73,7 +78,7 @@ function ResumePage(): React.ReactElement {
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
-  }, []);
+  }, [setPreviewMode]);
 
   // Fetch client wallet address as primary key
   useEffect(() => {

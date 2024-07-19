@@ -48,11 +48,15 @@ environments: []
 capabilities: {}
 screenshots: []
 components: []
-appName: Resume Manager
 navigation:
   - title:
       en: Home
       zh: 首页
     link: '/'
-    icon: mdi:home
     section: header
+  - title:
+      en: New Profile
+      zh: 新建简历
+    link: '/profile/new'
+    section: header
+    
