@@ -45,6 +45,9 @@
   "message": {
     "warning": {
       "deleteItem": "无法删除 basicInfo 中的最后一个项目。"
+    },
+    "info": {
+      "noChange": "没有任何更新操作。"
     }
   }
 }
