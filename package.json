@@ -39,6 +39,7 @@
   "dependencies": {
     "@arcblock/did-auth": "^1.18.126",
     "@arcblock/did-auth-storage-nedb": "^1.7.1",
+    "@arcblock/did-connect": "^2.10.7",
     "@arcblock/ux": "^2.10.7",
     "@blocklet/launcher-layout": "^2.3.33",
     "@blocklet/sdk": "^1.16.28",

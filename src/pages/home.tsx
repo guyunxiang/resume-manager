@@ -9,6 +9,7 @@ import { RESUME_TEMPLATE } from '../libs/const';
 import api from '../libs/api';
 
 import './home.css';
+import { useAppContext } from '../components/app-context';
 
 // Define the structure of API responses
 interface ApiResponse<T> {
@@ -28,10 +29,10 @@ interface ProfileItem {
 type ProfileList = ProfileItem[];
 
 function Home() {
-  const [walletAddress, setWalletAddress] = useState<string>('');
-  const [profileList, setProfileList] = useState<ProfileList | null>(null);
-
   const { t } = useLocaleContext();
+  const { walletAddress, setWalletAddress } = useAppContext();
+
+  const [profileList, setProfileList] = useState<ProfileList | null>(null);
 
   // Fetch client wallet address as primary key
   useEffect(() => {
@@ -49,7 +50,7 @@ function Home() {
       }
     };
     fetchWalletAddress();
-  }, []);
+  }, [setWalletAddress]);
 
   useEffect(() => {
     const fetchProfileList = async (wallet: string) => {

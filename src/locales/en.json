@@ -1,3 +1,45 @@
 {
-  "appName": "Resume Manager"
+  "appName": "Resume Manager",
+  "btn": {
+    "preview": "Preview",
+    "edit": "Edit",
+    "back": "Back",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "append": "Add"
+  },
+  "title": {
+    "summary": "Summary",
+    "work": "Work Experience",
+    "education": "Education",
+    "common": "Common Items"
+  },
+  "templates": {
+    "summary": {
+      "title": "Summary",
+      "defaultContent": "Add your summary here"
+    },
+    "workExperience": {
+      "title": "Work Experience",
+      "jobTitle": "Job Title",
+      "defaultJobDescription": "Add your job description here"
+    },
+    "education": {
+      "title": "Education",
+      "defaultContent": "Add your education details here"
+    },
+    "commonItems": {
+      "title": "Common Items",
+      "defaultContent": "Add common items here"
+    }
+  },
+  "modal": {
+    "deleteProfile": {
+      "title": "Confirm Deletion",
+      "text": "Are you sure you want to delete this profile? This action cannot be undone.",
+      "cancelButton": "Cancel",
+      "deleteButton": "Delete"
+    }
+  }
 }

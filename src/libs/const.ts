@@ -1,4 +1,15 @@
-export const RESUME_TEMPLATE = {
+interface TemplateType {
+  name: string;
+  basicInfo: string[];
+  profiles: Array<{
+    title: string;
+    summary?: string;
+    list?: Array<{ title: string; descriptions: string[] }>;
+    descriptions?: string[];
+  }>;
+}
+
+export const RESUME_TEMPLATE: TemplateType = {
   name: '顾云翔（本地模版）',
   basicInfo: ['guyunxiang32@gmail.com', '+1 2345678900', '浙江，杭州'],
   profiles: [
@@ -67,29 +78,55 @@ export const RESUME_TEMPLATE = {
   ],
 };
 
-export const MINIMUM_RESUME_TEMPLATE = {
-  name: 'First Name Last Name',
-  basicInfo: ['hr@arcblock.io'],
-  profiles: [
-    {
-      title: 'Summary',
-      summary:
-        'I am a dedicated and driven individual with a strong passion for [your field or industry]. With a solid background in [relevant experience or education], I bring [specific skills or expertise] to any team I work with. My journey in [field/industry] has equipped me with a keen [quality/skill], allowing me to [accomplishment or ability].',
-    },
-    {
-      title: 'Work Experience',
-      list: [
-        {
-          title: "Company's Name, Job Title, Date",
-          descriptions: [
-            'Develop and execute comprehensive marketing strategies to drive brand awareness and lead generation, resulting in a 30% increase in customer acquisition.',
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Education',
-      descriptions: ["University of Oxford, Master's degree, 2020"],
-    },
-  ],
+export const MINIMUM_RESUME_TEMPLATE: { [key: string]: TemplateType } = {
+  en: {
+    name: 'First Name Last Name',
+    basicInfo: ['hr@arcblock.io'],
+    profiles: [
+      {
+        title: 'Summary',
+        summary:
+          'I am a dedicated and driven individual with a strong passion for [your field or industry]. With a solid background in [relevant experience or education], I bring [specific skills or expertise] to any team I work with. My journey in [field/industry] has equipped me with a keen [quality/skill], allowing me to [accomplishment or ability].',
+      },
+      {
+        title: 'Work Experience',
+        list: [
+          {
+            title: "Company's Name, Job Title, Date",
+            descriptions: [
+              'Develop and execute comprehensive marketing strategies to drive brand awareness and lead generation, resulting in a 30% increase in customer acquisition.',
+            ],
+          },
+        ],
+      },
+      {
+        title: 'Education',
+        descriptions: ["University of Oxford, Master's degree, 2020"],
+      },
+    ],
+  },
+  zh: {
+    name: '姓名',
+    basicInfo: ['hr@arcblock.io'],
+    profiles: [
+      {
+        title: '个人简介',
+        summary:
+          '我是一个敬业、有干劲的人，对[您的领域或行业]有着强烈的热情。凭借扎实的[相关经验或教育]背景，我可以为任何团队带来[特定技能或专业知识]。在[领域/行业]的历练让我具备了敏锐的[素质/技能]，使我能够[取得成就或能力]。',
+      },
+      {
+        title: '工作经历',
+        list: [
+          {
+            title: '公司名称，工作岗位，任职时间',
+            descriptions: ['制定并执行全面的营销战略，提高品牌知名度并创造销售线索，使客户获取率提高 30%。'],
+          },
+        ],
+      },
+      {
+        title: '教育背景',
+        descriptions: ['牛津大学，硕士学位，2020'],
+      },
+    ],
+  },
 };

@@ -72,7 +72,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
         ))}
       {profile.list &&
         profile.list.map((item, itemIndex) => (
-          <div key={item._id || itemIndex} id={item._id}>
+          <div key={`${item._id}-${itemIndex}`}>
             <h3 className="subTitle">
               <EditComponent
                 status={editStatus}

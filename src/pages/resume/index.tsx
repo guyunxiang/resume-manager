@@ -3,12 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Button, ButtonGroup, Dropdown, DropdownButton, Modal, Spinner } from 'react-bootstrap';
+import { useLocaleContext } from '@arcblock/ux/lib/Locale/context';
 
 import EditComponent from '../../components/edit-component';
 import ProfileItem from '../../components/profile-item';
 import Loading from '../../components/loading';
 
-import { usePreviewContext } from '../../components/preview-context';
+import { useAppContext } from '../../components/app-context';
 
 import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
 import api from '../../libs/api';
@@ -53,7 +54,11 @@ function ResumePage(): React.ReactElement {
   const isTemplate = searchParams.get('template') === 'true';
 
   // Preview mode
-  const { previewMode, setPreviewMode } = usePreviewContext();
+  const { previewMode, setPreviewMode } = useAppContext();
+
+  const { t, locale } = useLocaleContext();
+
+  // console.log(useLocaleContext())
 
   const formRef = useRef<HTMLFormElement>(null);
   const [editStatus, setEditStatus] = useState<boolean>(false);
@@ -106,7 +111,8 @@ function ResumePage(): React.ReactElement {
         const { success, data } = res.data;
         if (!success || !data) {
           toast.error('Failed to obtain the current profile!');
-          setProfileData(MINIMUM_RESUME_TEMPLATE);
+          const template = MINIMUM_RESUME_TEMPLATE[locale] ?? MINIMUM_RESUME_TEMPLATE.en ?? null;
+          setProfileData(template);
           return;
         }
         setProfileData(data);
@@ -115,13 +121,14 @@ function ResumePage(): React.ReactElement {
       }
     };
     if (isNewPage) {
-      setProfileData(isTemplate ? RESUME_TEMPLATE : MINIMUM_RESUME_TEMPLATE);
+      const template = MINIMUM_RESUME_TEMPLATE[locale] ?? MINIMUM_RESUME_TEMPLATE.en ?? null;
+      setProfileData(isTemplate ? RESUME_TEMPLATE : template);
       return;
     }
     if (walletAddress && profileId) {
       fetchProfileByIdAndWallet(walletAddress);
     }
-  }, [walletAddress, isNewPage, profileId, isTemplate]);
+  }, [walletAddress, isNewPage, profileId, isTemplate, locale]);
 
   // Handle cancellation of edit mode
   const handleCancel = () => {
@@ -392,31 +399,31 @@ function ResumePage(): React.ReactElement {
       switch (selectedTemplate) {
         case 0:
           newProfileData.profiles.push({
-            title: 'Summary',
-            summary: 'Add your summary here',
+            title: t('templates.summary.title'),
+            summary: t('templates.summary.defaultContent'),
           });
           break;
         case 1:
           newProfileData.profiles.push({
-            title: 'Work Experience',
+            title: t('templates.workExperience.title'),
             list: [
               {
-                title: 'Job Title',
-                descriptions: ['Add your job description here'],
+                title: t('templates.workExperience.jobTitle'),
+                descriptions: [t('templates.workExperience.defaultJobDescription')],
               },
             ],
           });
           break;
         case 2:
           newProfileData.profiles.push({
-            title: 'Education',
-            descriptions: ['Add your education details here'],
+            title: t('templates.education.title'),
+            descriptions: [t('templates.education.defaultContent')],
           });
           break;
         case 3:
           newProfileData.profiles.push({
-            title: 'Common Items',
-            descriptions: ['Add common items here'],
+            title: t('templates.commonItems.title'),
+            descriptions: [t('templates.commonItems.defaultContent')],
           });
           break;
         default:
@@ -443,7 +450,7 @@ function ResumePage(): React.ReactElement {
           }
           setPreviewMode(true);
         }}>
-        Preview
+        {t('btn.preview')}
       </Button>
     );
   };
@@ -462,19 +469,19 @@ function ResumePage(): React.ReactElement {
               setOriginalUserInfo(JSON.parse(JSON.stringify(profileData)));
               setEditStatus(true);
             }}>
-            Edit
+            {t('btn.edit')}
           </Button>
           <Button variant="outline-secondary" className="w-100" onClick={() => navigate('/')}>
-            {'<'} Back
+            {t('btn.back')}
           </Button>
         </div>
       );
-    const templates = ['Summary', 'Work Experience', 'Education', 'Common Items'];
+    const templates = [t('title.summary'), t('title.work'), t('title.education'), t('title.common')];
     return (
       <div className="d-flex flex-column gap-3">
         <ButtonGroup className="w-100">
-          <Button className="px-3" onClick={handleAppendProfile}>
-            Append
+          <Button className="px-3 text-nowrap" onClick={handleAppendProfile}>
+            {t('btn.append')}
           </Button>
           <DropdownButton
             className="w-100"
@@ -495,13 +502,13 @@ function ResumePage(): React.ReactElement {
           disabled={loading}
           onClick={() => handleSave(true)}>
           <Loading loading={loading} />
-          Submit
+          {t('btn.submit')}
         </Button>
         <Button variant="secondary" className="w-100" onClick={handleCancel}>
-          Cancel
+          {t('btn.cancel')}
         </Button>
         <Button className="w-100" variant="outline-danger" onClick={() => setShowDeleteModal(true)}>
-          Delete
+          {t('btn.delete')}
         </Button>
       </div>
     );
@@ -519,8 +526,8 @@ function ResumePage(): React.ReactElement {
   }
 
   return (
-    <>
-      {showAlert ? (
+    <div>
+      {showAlert && (
         <div className="alert alert-info alert-dismissible rounded-0 border-0 text-center px-3" role="alert">
           Press <strong>ESC</strong> key to exit.
           <button
@@ -534,7 +541,7 @@ function ResumePage(): React.ReactElement {
             }}
           />
         </div>
-      ) : null}
+      )}
       <div className="resume-page container px-3">
         <form ref={formRef}>
           <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
@@ -564,10 +571,10 @@ function ResumePage(): React.ReactElement {
               <hr />
               {renderAppendBtnGroup()}
             </div>
-            <div className="profile flex-1">
+            <div className="profile flex-1" key={locale}>
               {profileData.profiles.map((profile, index) => (
                 <ProfileItem
-                  key={profile._id || index}
+                  key={`${profile._id}-${index}_${locale}`}
                   profile={profile}
                   profileIndex={index}
                   editStatus={editStatus}
@@ -579,29 +586,27 @@ function ResumePage(): React.ReactElement {
           </div>
         </form>
         <Modal
+          centered
           show={showDeleteModal}
           onHide={() => {
             setShowDeleteModal(false);
           }}>
           <Modal.Header closeButton>
-            <Modal.Title>Confirm Deletion</Modal.Title>
+            <Modal.Title>{t('modal.deleteProfile.title')}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            Are you sure you want to delete this profile? <br />
-            This action cannot be undone.
-          </Modal.Body>
+          <Modal.Body>{t('modal.deleteProfile.text')}</Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-              Cancel
+              {t('modal.deleteProfile.cancelButton')}
             </Button>
             <Button variant="danger" onClick={handleDelete}>
               <Loading loading={loading} />
-              Delete
+              {t('modal.deleteProfile.deleteButton')}
             </Button>
           </Modal.Footer>
         </Modal>
       </div>
-    </>
+    </div>
   );
 }
 
