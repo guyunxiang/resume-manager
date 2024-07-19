@@ -45,6 +45,9 @@
   "message": {
     "warning": {
       "deleteItem": "Cannot delete the last item in basicInfo."
+    },
+    "info": {
+      "noChange": "No changes detected!"
     }
   }
 }

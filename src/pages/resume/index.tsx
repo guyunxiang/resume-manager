@@ -158,7 +158,7 @@ function ResumePage(): React.ReactElement {
   const handleSubmit = useCallback(
     (updatedProfileData: ProfileData) => {
       if (!originalUserInfo) {
-        toast.info('No changes detected!');
+        toast.info(t('message.info.noChange'));
         return;
       }
       if (!profileId) {
@@ -167,7 +167,7 @@ function ResumePage(): React.ReactElement {
         handleUpdateProfile(updatedProfileData);
       }
     },
-    [originalUserInfo, profileId, handleCreateNewProfile, handleUpdateProfile],
+    [originalUserInfo, profileId, handleCreateNewProfile, handleUpdateProfile, t],
   );
 
   // Handle save action
@@ -248,8 +248,8 @@ function ResumePage(): React.ReactElement {
               break;
             case 'list':
               targetArray.push({
-                title: 'Add title',
-                descriptions: ['Add description content'],
+                title: t('templates.workExperience.jobTitle'),
+                descriptions: [t('templates.workExperience.defaultJobDescription')],
               });
               break;
             default:
@@ -260,7 +260,7 @@ function ResumePage(): React.ReactElement {
         return newProfileData;
       });
     },
-    [handleSave],
+    [handleSave, t],
   );
 
   // Handle delete an item
