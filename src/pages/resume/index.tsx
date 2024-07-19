@@ -1,8 +1,8 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Button, ButtonGroup, Dropdown, DropdownButton, Modal, Spinner } from 'react-bootstrap';
+import { Button, ButtonGroup, Dropdown, DropdownButton, Modal } from 'react-bootstrap';
 import { useLocaleContext } from '@arcblock/ux/lib/Locale/context';
 
 import EditComponent from '../../components/edit-component';
@@ -10,11 +10,12 @@ import ProfileItem from '../../components/profile-item';
 import Loading from '../../components/loading';
 
 import { useAppContext } from '../../components/app-context';
-
 import { RESUME_TEMPLATE, MINIMUM_RESUME_TEMPLATE } from '../../libs/const';
-import api from '../../libs/api';
+import useApiGet from '../../hooks/use-api-get';
+import useApiMutation from '../../hooks/use-api-mutation';
 
 import './index.css';
+import PageLoading from '../../components/page-loading';
 
 // Define the structure of user information
 interface ProfileData {
@@ -34,44 +35,53 @@ interface ProfileData {
   }>;
 }
 
-// Define the structure of API responses
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
 function ResumePage(): React.ReactElement {
   const navigate = useNavigate();
-
   const { pathname } = useLocation();
-  // Validate if on create profile page
-  const isNewPage = pathname === '/profile/new';
-  // Get profile id from url
   const { id: profileId } = useParams();
-  // Get isTemplate, if true, display template profile
   const [searchParams] = useSearchParams();
-  const isTemplate = searchParams.get('template') === 'true';
-
-  // Preview mode
+  const { t, locale } = useLocaleContext();
   const { previewMode, setPreviewMode } = useAppContext();
 
-  const { t, locale } = useLocaleContext();
-
-  // console.log(useLocaleContext())
-
+  // State variables
   const formRef = useRef<HTMLFormElement>(null);
   const [editStatus, setEditStatus] = useState<boolean>(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [originalUserInfo, setOriginalUserInfo] = useState<ProfileData | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
-  // const [previewMode, setPreviewMode] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
-  const [loading, setLoading] = useState<boolean>(false);
 
-  // Preview mode
+  // Derived state
+  const isNewPage = pathname === '/profile/new';
+  const isTemplate = searchParams.get('template') === 'true';
+
+  // API calls using custom hooks
+  const { data: walletAddress } = useApiGet<string>('/api/address/query');
+  const { data: fetchedProfile, loading: profileLoading } = useApiGet<ProfileData>(
+    walletAddress && profileId ? `/api/profile/query?wallet=${walletAddress}&id=${profileId}` : null,
+  );
+  const { mutate: createProfile, loading: createLoading } = useApiMutation<ProfileData>('/api/profile/create', 'post');
+  const { mutate: updateProfile, loading: updateLoading } = useApiMutation<void>('/api/profile/update', 'put');
+  const { mutate: deleteProfile, loading: deleteLoading } = useApiMutation<void>(
+    `/api/profile/delete?id=${profileId}`,
+    'delete',
+  );
+
+  // Combine all loading states
+  const isLoading = profileLoading || createLoading || updateLoading || deleteLoading;
+
+  // Use effect to set profile data
+  useEffect(() => {
+    if (isNewPage) {
+      const template = MINIMUM_RESUME_TEMPLATE[locale] ?? MINIMUM_RESUME_TEMPLATE.en ?? null;
+      setProfileData(isTemplate ? RESUME_TEMPLATE : template);
+    } else if (fetchedProfile) {
+      setProfileData(fetchedProfile);
+    }
+  }, [isNewPage, isTemplate, fetchedProfile, locale]);
+
+  // Use effect to listening press Esc key to exit preview mode
   useEffect(() => {
     const handleEsc = (event: any) => {
       if (event.key === 'Escape' || event.keyCode === 27) {
@@ -85,50 +95,55 @@ function ResumePage(): React.ReactElement {
     };
   }, [setPreviewMode]);
 
-  // Fetch client wallet address as primary key
-  useEffect(() => {
-    const fetchWalletAddress = async () => {
+  // Handle creation of new profile
+  const handleCreateNewProfile = useCallback(
+    async (profile: ProfileData) => {
+      // Prevent multiple submissions
+      if (createLoading) return;
       try {
-        const res = await api.get<ApiResponse<string>>('/api/address/query');
-        const { success, data } = res.data;
-        if (!success || !data) {
-          toast.error('Failed to obtain the current wallet address!');
-          return;
+        const result = await createProfile({ profile, wallet: walletAddress });
+        if (result.success && result.data) {
+          navigate(`/profile/${result.data._id}`);
+          setEditStatus(false);
         }
-        setWalletAddress(data);
       } catch (error) {
-        toast.error('An error occurred while fetching wallet address');
+        console.error('Error creating profile:', error);
       }
-    };
-    fetchWalletAddress();
-  }, []);
+    },
+    [createLoading, createProfile, navigate, walletAddress],
+  );
 
-  // Fetch profile data by wallet address
-  useEffect(() => {
-    const fetchProfileByIdAndWallet = async (wallet: string) => {
+  // Handle update of existing profile
+  const handleUpdateProfile = useCallback(
+    async (profile: ProfileData) => {
+      // Prevent multiple submissions
+      if (updateLoading) return;
       try {
-        const res = await api.get<ApiResponse<ProfileData>>(`/api/profile/query?wallet=${wallet}&id=${profileId}`);
-        const { success, data } = res.data;
-        if (!success || !data) {
-          toast.error('Failed to obtain the current profile!');
-          const template = MINIMUM_RESUME_TEMPLATE[locale] ?? MINIMUM_RESUME_TEMPLATE.en ?? null;
-          setProfileData(template);
-          return;
+        const result = await updateProfile({ profile });
+        if (result.success) {
+          setEditStatus(false);
         }
-        setProfileData(data);
       } catch (error) {
-        toast.error('An error occurred while fetching profile data');
+        console.error('Error updating profile:', error);
       }
-    };
-    if (isNewPage) {
-      const template = MINIMUM_RESUME_TEMPLATE[locale] ?? MINIMUM_RESUME_TEMPLATE.en ?? null;
-      setProfileData(isTemplate ? RESUME_TEMPLATE : template);
-      return;
+    },
+    [updateLoading, updateProfile],
+  );
+
+  // Handle delete profile
+  const handleDeleteProfile = useCallback(async () => {
+    // Prevent multiple submissions
+    if (deleteLoading) return;
+    try {
+      const result = await deleteProfile();
+      if (result.success) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error deleting profile:', error);
     }
-    if (walletAddress && profileId) {
-      fetchProfileByIdAndWallet(walletAddress);
-    }
-  }, [walletAddress, isNewPage, profileId, isTemplate, locale]);
+    setShowDeleteModal(false);
+  }, [deleteLoading, deleteProfile, navigate]);
 
   // Handle cancellation of edit mode
   const handleCancel = () => {
@@ -139,138 +154,100 @@ function ResumePage(): React.ReactElement {
     setOriginalUserInfo(null);
   };
 
-  const handleCreateNewProfile = async (profile: ProfileData) => {
-    try {
-      setLoading(true);
-      const res = await api.post<ApiResponse<ProfileData>>('/api/profile/create', {
-        profile,
-        wallet: walletAddress,
-      });
-      setLoading(false);
-      const { success, message, data } = res.data;
-      if (!success || !data) {
-        toast.error(message || 'Failed to create profile');
+  // Handle submission of profile
+  const handleSubmit = useCallback(
+    (updatedProfileData: ProfileData) => {
+      if (!originalUserInfo) {
+        toast.info('No changes detected!');
         return;
       }
-      navigate(`/profile/${data._id}`);
-      setEditStatus(false);
-      toast.success(message || 'Profile created successfully!');
-    } catch (error) {
-      setLoading(false);
-      toast.error('An error occurred while create profile');
-    }
-  };
-
-  // Handle update of existing profile
-  const handleUpdateProfile = async (profile: ProfileData) => {
-    try {
-      setLoading(true);
-      const res = await api.put<ApiResponse<void>>('/api/profile/update', {
-        profile,
-      });
-      setLoading(false);
-      const { success, message } = res.data;
-      if (!success) {
-        toast.error(message || 'Failed to update profile');
-        return;
+      if (!profileId) {
+        handleCreateNewProfile(updatedProfileData);
+      } else {
+        handleUpdateProfile(updatedProfileData);
       }
-      setEditStatus(false);
-      toast.success(message || 'Profile updated successfully');
-    } catch (error) {
-      setLoading(false);
-      toast.error('An error occurred while updating profile');
-    }
-  };
-
-  // Handle submission of new profile
-  const handleSubmit = (updateProfileData: ProfileData) => {
-    if (!originalUserInfo) {
-      toast.info('No changes detected!');
-      return;
-    }
-    // id is existing, create new profile
-    if (!profileId) {
-      handleCreateNewProfile(updateProfileData);
-    } else {
-      handleUpdateProfile(updateProfileData);
-    }
-  };
+    },
+    [originalUserInfo, profileId, handleCreateNewProfile, handleUpdateProfile],
+  );
 
   // Handle save action
-  const handleSave = (submit?: boolean) => {
-    if (!formRef.current) return;
+  const handleSave = useCallback(
+    (submit?: boolean) => {
+      if (!formRef.current) return;
 
-    const formData = new FormData(formRef.current);
-    const updateProfileData = { ...profileData } as ProfileData;
+      const formData = new FormData(formRef.current);
+      const updatedProfileData = { ...profileData } as ProfileData;
 
-    for (const [name, value] of formData.entries()) {
-      const keys = name.replace(/\[(\w+)\]/g, '.$1').split('.');
-      let current: any = updateProfileData;
+      // Update nested object properties based on form field names
+      // obj, the object to update, keys
+      // keys, the keys representing the path to property
+      // value, the value to set
+      const updateNestedProperty = (obj: any, keys: string[], value: string): void => {
+        const key = keys.shift();
+        if (key === undefined) return;
 
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        if (key) {
-          if (!(key in current)) {
-            current[key] = {};
+        if (keys.length === 0) {
+          obj[key] = value;
+        } else {
+          if (typeof obj[key] !== 'object') {
+            obj[key] = {};
           }
-          current = current[key];
+          updateNestedProperty(obj[key], keys, value);
         }
-      }
+      };
 
-      const lastKey = keys[keys.length - 1];
-      if (lastKey) {
-        current[lastKey] = value.toString();
+      // Process each form field
+      formData.forEach((value, name) => {
+        const keys = name.replace(/\[(\w+)\]/g, '.$1').split('.');
+        updateNestedProperty(updatedProfileData, keys, value.toString());
+      });
+
+      setProfileData(updatedProfileData);
+
+      if (submit) {
+        handleSubmit(updatedProfileData);
       }
-    }
-    setProfileData(updateProfileData);
-    if (submit) {
-      handleSubmit(updateProfileData);
-    }
-  };
+    },
+    [profileData, handleSubmit],
+  );
 
   // Handle append a new item into profile
-  const handleAppend = (path: string) => {
-    handleSave();
-    setProfileData((preProfileData) => {
-      if (!preProfileData) return null;
+  const handleAppendItem = useCallback(
+    (path: string) => {
+      handleSave();
+      setProfileData((prevProfileData) => {
+        if (!prevProfileData) return null;
+        const newProfileData = JSON.parse(JSON.stringify(prevProfileData));
 
-      const newProfileData = JSON.parse(JSON.stringify(preProfileData));
-      const keys = path.split('.');
-      let current: any = newProfileData;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        if (key && key.includes('[')) {
-          const parts = key.split('[');
-          const arrayName = parts[0];
-          const indexStr = parts[1];
-          if (arrayName && indexStr) {
-            const index = parseInt(indexStr.replace(']', ''), 10);
-            if (!Number.isNaN(index)) {
-              current = current[arrayName][index];
-            } else {
-              return preProfileData;
-            }
-          } else {
-            return preProfileData;
+        // Fint the target array
+        // obj, current object
+        // keys, the remaining keys path
+        const findTargetArray = (obj: any, keys: string[]): any[] | null => {
+          if (keys.length === 0) return null;
+          const currentKey = keys[0];
+          if (!currentKey) return null;
+          if (currentKey.includes('[')) {
+            const [arrayName, indexStr] = currentKey.split(/\[|\]/);
+            if (!arrayName || !indexStr) return null;
+            const index = parseInt(indexStr, 10);
+            if (Number.isNaN(index) || !obj[arrayName] || !Array.isArray(obj[arrayName])) return null;
+            return keys.length === 1 ? obj[arrayName] : findTargetArray(obj[arrayName][index], keys.slice(1));
           }
-        } else if (key) {
-          current = current[key];
-        } else {
-          return preProfileData;
-        }
-      }
+          return keys.length === 1 ? obj[currentKey] : findTargetArray(obj[currentKey], keys.slice(1));
+        };
 
-      const lastKey = keys[keys.length - 1];
-      if (lastKey) {
-        if (Array.isArray(current[lastKey as keyof typeof current])) {
+        const keys = path.split('.');
+        const targetArray = findTargetArray(newProfileData, keys);
+
+        if (Array.isArray(targetArray)) {
+          const lastKey = keys[keys.length - 1];
           switch (lastKey) {
             case 'basicInfo':
             case 'descriptions':
-              (current[lastKey] as string[]).push('');
+              targetArray.push('');
               break;
             case 'list':
-              (current[lastKey] as Array<{ title: string; descriptions: string[] }>).push({
+              targetArray.push({
                 title: 'Add title',
                 descriptions: ['Add description content'],
               });
@@ -279,123 +256,122 @@ function ResumePage(): React.ReactElement {
               console.warn(`Unhandled array type: ${lastKey}`);
           }
         }
-      }
-      return newProfileData;
-    });
-  };
 
-  // Hanlde delete an item
-  const handleDeleteItem = (path: string) => {
-    handleSave();
-    setProfileData((preProfileData) => {
-      if (!preProfileData) return null;
+        return newProfileData;
+      });
+    },
+    [handleSave],
+  );
 
-      const newProfileData = JSON.parse(JSON.stringify(preProfileData));
-      const keys = path.split('.');
-      let current: any = newProfileData;
-      let parent: any = null;
-      let lastArrayName: string | null = null;
+  // Handle delete an item
+  const handleDeleteItem = useCallback(
+    (path: string) => {
+      // Save current state before modification
+      handleSave();
+      setProfileData((preProfileData) => {
+        // Return null if there's no profile data
+        if (!preProfileData) return null;
 
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        if (key && key.includes('[')) {
-          const [arrayName, indexStr] = key.split('[');
+        // Deep copy to avoid mutation
+        const newProfileData = JSON.parse(JSON.stringify(preProfileData));
+        // Split the path into keys
+        const keys = path.split('.');
+        let current: any = newProfileData;
+        let parent: any = null;
+        let lastArrayName: string | null = null;
+
+        // Traverse the path, stopping before the last key
+        for (let i = 0; i < keys.length - 1; i++) {
+          const key = keys[i];
+          if (key && key.includes('[')) {
+            // Handle array index access
+            const [arrayName, indexStr] = key.split('[');
+            if (arrayName && indexStr) {
+              const index = parseInt(indexStr.replace(']', ''), 10);
+              if (!Number.isNaN(index)) {
+                parent = current;
+                lastArrayName = arrayName;
+                current = current[arrayName][index];
+              } else {
+                // Return original if index is NaN
+                return preProfileData;
+              }
+            }
+          } else if (key) {
+            // Handle object key access
+            parent = current;
+            lastArrayName = key;
+            current = current[key];
+          } else {
+            // Return original if key is invalid
+            return preProfileData;
+          }
+        }
+
+        const lastKey = keys[keys.length - 1];
+        if (lastKey && lastKey.includes('[')) {
+          // Handle final array element deletion
+          const [arrayName, indexStr] = lastKey.split('[');
           if (arrayName && indexStr) {
             const index = parseInt(indexStr.replace(']', ''), 10);
-            if (!Number.isNaN(index)) {
-              parent = current;
-              lastArrayName = arrayName;
-              current = current[arrayName][index];
-            } else {
-              return preProfileData;
+            if (!Number.isNaN(index) && Array.isArray(current[arrayName])) {
+              if (arrayName === 'basicInfo' && current[arrayName].length <= 1) {
+                // Warn if deleting last item
+                toast.warn(t('message.warning.deleteItem'));
+              } else {
+                // Remove item at index
+                current[arrayName].splice(index, 1);
+              }
             }
           }
-        } else if (key) {
-          parent = current;
-          lastArrayName = key;
-          current = current[key];
-        } else {
-          return preProfileData;
-        }
-      }
-
-      const lastKey = keys[keys.length - 1];
-      if (lastKey && lastKey.includes('[')) {
-        const [arrayName, indexStr] = lastKey.split('[');
-        if (arrayName && indexStr) {
-          const index = parseInt(indexStr.replace(']', ''), 10);
-          if (!Number.isNaN(index) && Array.isArray(current[arrayName])) {
-            if (arrayName === 'basicInfo' && current[arrayName].length <= 1) {
-              toast.warn('Cannot delete the last item in basicInfo.');
+        } else if (lastKey && Array.isArray(current)) {
+          // Handle deletion when current is an array
+          const index = parseInt(lastKey, 10);
+          if (!Number.isNaN(index)) {
+            if (lastArrayName === 'basicInfo' && current.length <= 1) {
+              // Warn if deleting last item
+              toast.warn(t('message.warning.deleteItem'));
             } else {
-              current[arrayName].splice(index, 1);
+              // Remove item at index
+              current.splice(index, 1);
             }
           }
-        }
-      } else if (lastKey && Array.isArray(current)) {
-        const index = parseInt(lastKey, 10);
-        if (!Number.isNaN(index)) {
-          if (lastArrayName === 'basicInfo' && current.length <= 1) {
-            toast.warn('Cannot delete the last item in basicInfo.');
+        } else if (parent && lastArrayName) {
+          // Handle deletion for non-array fields
+          if (Array.isArray(parent[lastArrayName])) {
+            if (lastArrayName === 'basicInfo' && parent[lastArrayName].length <= 1) {
+              // Warn if deleting last item
+              toast.warn(t('message.warning.deleteItem'));
+            } else {
+              // Filter out current item
+              parent[lastArrayName] = parent[lastArrayName].filter((item: any) => item !== current);
+            }
           } else {
-            current.splice(index, 1);
+            // Set non-array field to undefined
+            parent[lastArrayName] = undefined;
           }
         }
-      } else if (parent && lastArrayName) {
-        // For non-array fields like 'summary'
-        if (Array.isArray(parent[lastArrayName])) {
-          if (lastArrayName === 'basicInfo' && parent[lastArrayName].length <= 1) {
-            toast.warn('Cannot delete the last item in basicInfo.');
-          } else {
-            parent[lastArrayName] = parent[lastArrayName].filter((item: any) => item !== current);
-          }
-        } else {
-          // For single items, we can set it to undefined or null
-          parent[lastArrayName] = undefined;
+
+        // Remove empty arrays or objects in profiles
+        if (lastArrayName === 'profiles') {
+          newProfileData.profiles = newProfileData.profiles.filter(
+            (profile: any) =>
+              profile.summary ||
+              (profile.descriptions && profile.descriptions.length) ||
+              (profile.list && profile.list.length),
+          );
         }
-      }
-
-      // Remove empty arrays or objects in profiles
-      if (lastArrayName === 'profiles') {
-        newProfileData.profiles = newProfileData.profiles.filter((profile: any) => {
-          if (
-            profile.summary ||
-            (profile.descriptions && profile.descriptions.length) ||
-            (profile.list && profile.list.length)
-          ) {
-            return true;
-          }
-          return false;
-        });
-      }
-      return newProfileData;
-    });
-  };
-
-  // Handle delete profile
-  const handleDelete = async () => {
-    try {
-      const res = await api.delete<ApiResponse<void>>(`/api/profile/delete?id=${profileId}`);
-      const { success, message } = res.data;
-      if (success) {
-        toast.success(message || 'Profile deleted successfully');
-        navigate('/');
-      } else {
-        toast.error(message || 'Failed to delete profile');
-      }
-    } catch (error) {
-      toast.error('An error occurred while deleting the profile');
-    }
-    setShowDeleteModal(false);
-  };
+        return newProfileData; // Return updated profile data
+      });
+    },
+    [handleSave, t],
+  );
 
   // Handle append a section into profile likes summary, work experience, education
   const handleAppendProfile = () => {
     setProfileData((preProfileData) => {
       if (!preProfileData) return null;
-
       const newProfileData = JSON.parse(JSON.stringify(preProfileData));
-
       switch (selectedTemplate) {
         case 0:
           newProfileData.profiles.push({
@@ -429,7 +405,6 @@ function ResumePage(): React.ReactElement {
         default:
           break;
       }
-
       return newProfileData;
     });
   };
@@ -499,9 +474,9 @@ function ResumePage(): React.ReactElement {
         <Button
           variant="primary"
           className="w-100 btn btn-primary px-5"
-          disabled={loading}
+          disabled={isLoading}
           onClick={() => handleSave(true)}>
-          <Loading loading={loading} />
+          <Loading loading={isLoading} />
           {t('btn.submit')}
         </Button>
         <Button variant="secondary" className="w-100" onClick={handleCancel}>
@@ -515,14 +490,8 @@ function ResumePage(): React.ReactElement {
   };
 
   // Render loading spinner while data is being fetched
-  if (!profileData) {
-    return (
-      <div className="loading-content">
-        <div className="d-flex align-items-center gap-3">
-          <Spinner animation="border" />
-        </div>
-      </div>
-    );
+  if (!profileData || profileLoading) {
+    return <PageLoading />;
   }
 
   return (
@@ -547,7 +516,7 @@ function ResumePage(): React.ReactElement {
           <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
             <div className="header">
               <h1>
-                <EditComponent status={editStatus} name="name">
+                <EditComponent isEditable={editStatus} name="name">
                   {profileData.name}
                 </EditComponent>
               </h1>
@@ -560,9 +529,9 @@ function ResumePage(): React.ReactElement {
               {profileData.basicInfo.map((text, index) => (
                 <div className="mb-3" key={`${text}-${index}`}>
                   <EditComponent
-                    status={editStatus}
+                    isEditable={editStatus}
                     name={`basicInfo[${index}]`}
-                    onAppend={() => handleAppend('basicInfo')}
+                    onAppend={() => handleAppendItem('basicInfo')}
                     onDelete={() => handleDeleteItem(`basicInfo[${index}]`)}>
                     {text}
                   </EditComponent>
@@ -578,7 +547,7 @@ function ResumePage(): React.ReactElement {
                   profile={profile}
                   profileIndex={index}
                   editStatus={editStatus}
-                  onAppend={handleAppend}
+                  onAppend={handleAppendItem}
                   onDelete={handleDeleteItem}
                 />
               ))}
@@ -599,8 +568,8 @@ function ResumePage(): React.ReactElement {
             <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
               {t('modal.deleteProfile.cancelButton')}
             </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              <Loading loading={loading} />
+            <Button variant="danger" onClick={handleDeleteProfile}>
+              <Loading loading={isLoading} />
               {t('modal.deleteProfile.deleteButton')}
             </Button>
           </Modal.Footer>
