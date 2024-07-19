@@ -65,6 +65,7 @@ function ResumePage(): React.ReactElement {
   useEffect(() => {
     const handleEsc = (event: any) => {
       if (event.key === 'Escape' || event.keyCode === 27) {
+        setShowAlert(false);
         setPreviewMode(false);
       }
     };
