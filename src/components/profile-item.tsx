@@ -44,7 +44,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
         </EditComponent>
       </h2>
       {profile.summary && (
-        <p>
+        <div>
           <EditComponent
             status={editStatus}
             type="textarea"
@@ -54,11 +54,11 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
             onDelete={() => onDelete(`profiles[${profileIndex}].summary`)}>
             {profile.summary}
           </EditComponent>
-        </p>
+        </div>
       )}
       {profile.descriptions &&
         profile.descriptions.map((description, descIndex) => (
-          <p key={`${description}_${descIndex}`}>
+          <div key={`${description}_${descIndex}`}>
             <EditComponent
               status={editStatus}
               name={`profiles[${profileIndex}].descriptions[${descIndex}]`}
@@ -66,7 +66,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
               onDelete={() => onDelete(`profiles[${profileIndex}].descriptions[${descIndex}]`)}>
               {description}
             </EditComponent>
-          </p>
+          </div>
         ))}
       {profile.list &&
         profile.list.map((item, itemIndex) => (
@@ -81,7 +81,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
               </EditComponent>
             </h3>
             {item.descriptions.map((description, descIndex) => (
-              <p key={`${description}_${itemIndex}_${descIndex}`}>
+              <div key={`${description}_${itemIndex}_${descIndex}`}>
                 <EditComponent
                   status={editStatus}
                   name={`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`}
@@ -89,7 +89,7 @@ const ProfileItem: React.FC<ProfileItemProps> = React.memo(function ProfileItem(
                   onDelete={() => onDelete(`profiles[${profileIndex}].list[${itemIndex}].descriptions[${descIndex}]`)}>
                   {description}
                 </EditComponent>
-              </p>
+              </div>
             ))}
           </div>
         ))}

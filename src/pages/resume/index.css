@@ -45,11 +45,11 @@
 }
 
 .resume-page .profile p > .input-group {
-  margin-bottom: 1em;
+  margin-bottom: 1rem;
 }
 
 .resume-page h2 {
-  margin: 1em 0;
+  margin: 1rem 0;
   font-size: 20px;
   font-weight: 600;
   color: rgb(57, 124, 161);
@@ -63,8 +63,8 @@
 }
 
 .resume-page h3 {
-  margin-top: 1em;
-  margin-bottom: 1em;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
   font-size: 16px;
   line-height: 2;
   color: rgb(57, 124, 161);
@@ -76,11 +76,15 @@
   color: rgb(57, 124, 161);
 }
 
-.resume-page p button,
 .resume-page h2 button,
-.resume-page h3 button {
+.resume-page h3 button,
+.resume-page .input-group button {
   border-style: dashed;
   border-color: var(--bs-border-color);
+}
+
+.resume-page .input-group {
+  margin-bottom: 1rem;
 }
 
 .resume-page .edit-input,

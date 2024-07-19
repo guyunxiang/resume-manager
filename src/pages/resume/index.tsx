@@ -521,7 +521,7 @@ function ResumePage(): React.ReactElement {
           <div className="d-flex flex-column flex-md-row gap-4 ">
             <div className="basicInfo">
               {profileData.basicInfo.map((text, index) => (
-                <p className="mb-3" key={`${text}-${index}`}>
+                <div className="mb-3" key={`${text}-${index}`}>
                   <EditComponent
                     status={editStatus}
                     name={`basicInfo[${index}]`}
@@ -529,7 +529,7 @@ function ResumePage(): React.ReactElement {
                     onDelete={() => handleDeleteItem(`basicInfo[${index}]`)}>
                     {text}
                   </EditComponent>
-                </p>
+                </div>
               ))}
               <hr />
               {renderAppendBtnGroup()}
