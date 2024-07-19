@@ -41,5 +41,10 @@
       "cancelButton": "Cancel",
       "deleteButton": "Delete"
     }
+  },
+  "message": {
+    "warning": {
+      "deleteItem": "Cannot delete the last item in basicInfo."
+    }
   }
 }

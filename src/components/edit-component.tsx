@@ -3,34 +3,39 @@
 import React, { useRef, ReactNode, useState, useEffect } from 'react';
 import { InputGroup, Button, Form } from 'react-bootstrap';
 
+// Define the props interface for the EditComponent
 interface EditComponentProps {
-  status: boolean;
-  type?: string;
+  isEditable: boolean;
+  inputType?: 'text' | 'textarea';
   children: ReactNode;
   name: string;
-  id?: string;
-  appendBtnText?: string;
-  deleteBtnText?: string;
+  appendButtonText?: string;
+  deleteButtonText?: string;
   onDelete?: () => void;
   onAppend?: () => void;
 }
 
+// EditComponent: A customizable input component that can switch between editable and non-editable states
 const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComponent({
-  id,
-  status,
-  type = 'input',
+  isEditable,
+  inputType = 'text',
   children,
   name,
-  appendBtnText = '+',
-  deleteBtnText = '-',
+  appendButtonText = '+',
+  deleteButtonText = '-',
   onAppend,
   onDelete,
 }: EditComponentProps) {
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  // Refs for input and textarea elements
+  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // State to hold the current value of the input
   const [value, setValue] = useState('');
 
+  // Effect to update the value when children prop changes
   useEffect(() => {
+    // Extract text content from children prop
     const childText = React.Children.toArray(children)
       .filter(
         (child): child is string | React.ReactElement =>
@@ -41,16 +46,17 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
     setValue(childText);
   }, [children]);
 
-  if (!status) {
+  // If not editable, render as a span
+  if (!isEditable) {
     return <span className="place-span">{children}</span>;
   }
 
-  if (type === 'textarea') {
+  // Render textarea if inputType is 'textarea'
+  if (inputType === 'textarea') {
     return (
       <Form.Control
-        id={id}
         as="textarea"
-        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+        ref={textareaRef}
         className="form-control edit-textarea"
         rows={5}
         defaultValue={value}
@@ -59,25 +65,20 @@ const EditComponent: React.FC<EditComponentProps> = React.memo(function EditComp
     );
   }
 
+  // Render input field with optional append and delete buttons
   return (
-    <InputGroup id={id}>
-      <Form.Control
-        ref={inputRef as React.RefObject<HTMLInputElement>}
-        className="form-control edit-input"
-        type="text"
-        defaultValue={value}
-        name={name}
-      />
-      {onAppend ? (
+    <InputGroup>
+      <Form.Control ref={inputRef} className="form-control edit-input" type="text" defaultValue={value} name={name} />
+      {onAppend && (
         <Button variant="outline-secondary" onClick={onAppend}>
-          {appendBtnText}
+          {appendButtonText}
         </Button>
-      ) : null}
-      {onDelete ? (
+      )}
+      {onDelete && (
         <Button variant="outline-danger" onClick={onDelete}>
-          {deleteBtnText}
+          {deleteButtonText}
         </Button>
-      ) : null}
+      )}
     </InputGroup>
   );
 });

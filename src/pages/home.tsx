@@ -1,78 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { useLocaleContext } from '@arcblock/ux/lib/Locale/context';
 
-import plusIcon from '../assets/plus-lg.svg';
+import { useAppContext } from '../components/app-context';
+import PageLoading from '../components/page-loading';
 
 import { RESUME_TEMPLATE } from '../libs/const';
-import api from '../libs/api';
+import useApiGet from '../hooks/use-api-get';
 
 import './home.css';
-import { useAppContext } from '../components/app-context';
+import plusIcon from '../assets/plus-lg.svg';
 
-// Define the structure of API responses
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
-type BasicInfo = string[];
-
-interface ProfileItem {
+// Define the structure of a resume item
+interface ResumeItem {
   _id: string;
   name: string;
-  basicInfo: BasicInfo;
+  basicInfo: string[];
 }
 
-type ProfileList = ProfileItem[];
-
-function Home() {
+// Use function declaration for the component
+function Home(): JSX.Element {
   const { t } = useLocaleContext();
   const { walletAddress, setWalletAddress } = useAppContext();
 
-  const [profileList, setProfileList] = useState<ProfileList | null>(null);
+  // Use the custom hook to fetch wallet address
+  const { data: fetchedWalletAddress, loading: addressLoading } = useApiGet<string>('/api/address/query');
 
-  // Fetch client wallet address as primary key
-  useEffect(() => {
-    const fetchWalletAddress = async () => {
-      try {
-        const res = await api.get<ApiResponse<string>>('/api/address/query');
-        const { success, data } = res.data;
-        if (!success || !data) {
-          toast.error('Failed to obtain the current wallet address!');
-          return;
-        }
-        setWalletAddress(data);
-      } catch (error) {
-        toast.error('An error occurred while fetching wallet address');
-      }
-    };
-    fetchWalletAddress();
-  }, [setWalletAddress]);
+  // Use the custom hook to fetch profile list
+  const { data: profileList, loading: profileLoading } = useApiGet<ResumeItem[]>(
+    walletAddress ? `/api/profiles/query?wallet=${walletAddress}` : null,
+  );
 
+  // Update wallet address when fetched
   useEffect(() => {
-    const fetchProfileList = async (wallet: string) => {
-      try {
-        const res = await api.get<ApiResponse<ProfileList>>(`/api/profiles/query?wallet=${wallet}`);
-        const { success, data } = res.data;
-        if (success && data) {
-          setProfileList(data);
-        }
-      } catch (error) {
-        toast.error('An error occurred while fetching profile data');
-      }
-    };
-    if (walletAddress) {
-      fetchProfileList(walletAddress);
+    if (fetchedWalletAddress) {
+      setWalletAddress(fetchedWalletAddress);
     }
-  }, [walletAddress]);
+  }, [fetchedWalletAddress, setWalletAddress]);
 
-  // render template profile
+  // Function to render template profile
   const renderTemplateProfile = () => {
-    if (profileList === null) return null;
-    if (profileList.length) return null;
+    if (profileList === null || profileList.length > 0) return null;
     return (
       <li>
         <Link to="/profile/new?template=true">
@@ -88,6 +56,11 @@ function Home() {
       </li>
     );
   };
+
+  // Show loading state if either address or profile is loading
+  if (addressLoading || profileLoading) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="home-page container px-3">
