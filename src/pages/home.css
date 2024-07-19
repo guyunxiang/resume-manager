@@ -3,6 +3,10 @@
   padding: 2rem 0;
 }
 
+.home-page .header {
+  height: 50px;
+}
+
 .home-page .logo {
   height: 50px;
   will-change: filter;
@@ -78,10 +82,12 @@
   .home-page h1 {
     font-size: 24px;
   }
+
   .resume-list {
     gap: 1rem;
     grid-template-columns: 1fr;
   }
+
   .card {
     padding: 0;
     border: none;

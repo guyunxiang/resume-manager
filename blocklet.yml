@@ -1,6 +1,6 @@
 name: resume-manager
-title: resume-manager
-description: A Blocklet DAPP blocklet
+title: Resume Manager
+description: A Blocklet DAPP to create resume on blocklet
 keywords:
   - blocklet
   - react
@@ -15,10 +15,10 @@ repository:
   url: git+https://github.com/blocklet/create-blocklet.git
 specVersion: 1.2.8
 version: 0.1.0
-logo: logo.png
+logo: logo.jpg
 files:
   - dist
-  - logo.png
+  - logo.jpg
   - screenshots
   - api/hooks/pre-start.js
 interfaces:
@@ -48,3 +48,15 @@ environments: []
 capabilities: {}
 screenshots: []
 components: []
+navigation:
+  - title:
+      en: Home
+      zh: 首页
+    link: '/'
+    section: header
+  - title:
+      en: New Profile
+      zh: 新建简历
+    link: '/profile/new'
+    section: header
+    
