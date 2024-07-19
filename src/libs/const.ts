@@ -11,14 +11,14 @@ export const RESUME_TEMPLATE = {
       title: '工作经历',
       list: [
         {
-          title: '浙江省，杭州市，淇澳家居（浙江）有限公司 — 2022.6-2023.7',
+          title: '浙江省，杭州市，淇澳家居（浙江）有限公司 - 2022.6-2023.7',
           descriptions: [
             '担任IT技术部，高级开发工程师。主要负责杭州技术部门前端开发工作 担任杭州技术部前端',
             'Leader 与香港、澳洲团队协作开发、维护公司网站 负责公司日本站、澳洲站、新西兰站的开发及维护工作',
           ],
         },
         {
-          title: '浙江省，杭州市，杭州远境互联科技有限公司 — 2018.4-2022.3',
+          title: '浙江省，杭州市，杭州远境互联科技有限公司 - 2018.4-2022.3',
           descriptions: [
             '担任技术部，高级前端开发工程师，主要负责公司前端开发工作',
             '主导公司核心前端项目架构升级及开发维护工作',
@@ -28,14 +28,14 @@ export const RESUME_TEMPLATE = {
           ],
         },
         {
-          title: '浙江省，杭州市，杭州雍享网络科技有限公司 — 2017.3-2018.4',
+          title: '浙江省，杭州市，杭州雍享网络科技有限公司 - 2017.3-2018.4',
           descriptions: [
             '担任技术部，高级前端工程师，主要负责公司前端开发工作',
             '负责公司官网前端开发及功能迭代维护工作',
           ],
         },
         {
-          title: '浙江省，杭州市，杭州博彦信息技术有限公司 — 2016.5-2017.3',
+          title: '浙江省，杭州市，杭州博彦信息技术有限公司 - 2016.5-2017.3',
           descriptions: [
             '担任电商业务部，前端开发工程师，主要负责阿里巴巴集团前端开发工作',
             '办公于杭州阿里巴巴集团，阿里妈妈事业部，采购平台，负责采购系统前端开发',
@@ -68,25 +68,28 @@ export const RESUME_TEMPLATE = {
 };
 
 export const MINIMUM_RESUME_TEMPLATE = {
-  name: 'Name',
-  basicInfo: ['Email Address'],
+  name: 'First Name Last Name',
+  basicInfo: ['hr@arcblock.io'],
   profiles: [
     {
       title: 'Summary',
-      summary: 'Personal Summary',
+      summary:
+        'I am a dedicated and driven individual with a strong passion for [your field or industry]. With a solid background in [relevant experience or education], I bring [specific skills or expertise] to any team I work with. My journey in [field/industry] has equipped me with a keen [quality/skill], allowing me to [accomplishment or ability].',
     },
     {
       title: 'Work Experience',
       list: [
         {
-          title: "Company's Name",
-          descriptions: ['Job Title'],
+          title: "Company's Name, Job Title, Date",
+          descriptions: [
+            'Develop and execute comprehensive marketing strategies to drive brand awareness and lead generation, resulting in a 30% increase in customer acquisition.',
+          ],
         },
       ],
     },
     {
       title: 'Education',
-      descriptions: ['University'],
+      descriptions: ["University of Oxford, Master's degree, 2020"],
     },
   ],
 };
