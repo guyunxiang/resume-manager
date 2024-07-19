@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+// import Header from '@blocklet/ui-react/lib/Header';
+// import Footer from '@blocklet/ui-react/lib/Footer';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
@@ -25,9 +27,11 @@ export default function WrappedApp() {
 
   return (
     <>
+      {/* <Header /> */}
       <Router basename={basename}>
         <App />
       </Router>
+      {/* <Footer /> */}
       <footer>
         Powered by{' '}
         <a href="http://github.com/guyunxiang" target="_blank" rel="noopener noreferrer">
