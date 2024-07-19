@@ -1,5 +1,6 @@
 import Header from '@blocklet/ui-react/lib/Header';
 import { useLocaleContext } from '@arcblock/ux/lib/Locale/context';
+// @ts-ignore
 import { Avatar, Address } from '@arcblock/did-connect/lib';
 
 import { useAppContext } from './app-context';
