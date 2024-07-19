@@ -41,5 +41,10 @@
       "cancelButton": "取消",
       "deleteButton": "删除"
     }
+  },
+  "message": {
+    "warning": {
+      "deleteItem": "无法删除 basicInfo 中的最后一个项目。"
+    }
   }
 }
